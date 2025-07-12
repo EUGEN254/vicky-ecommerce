@@ -122,6 +122,7 @@ export const AppContextProvider = (props) => {
     try {
       const { data } = await axios.get(backendUrl + '/api/user/data', { withCredentials: true });
       if (data.success) {
+        console.log("here eugen",data);
         setUserData(data.userData);
         setIsLoggedin(true);
         setIsOwner(data.userData.role === "hotelOwner" || data.userData.role === "admin");

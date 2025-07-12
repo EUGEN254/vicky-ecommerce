@@ -17,7 +17,7 @@ const Layout = () => {
       <Navbar toggleSidebar={() => setSidebarOpen(prev => !prev)} />
       
       {/* Add lg:pl-64 to reserve sidebar space only on large screens */}
-      <div className="relative flex-1 overflow-y-auto p-4 md:p-6 lg:pl-10">
+      <div className="relative flex-1 overflow-y-auto p-4 md:p-6 lg:pl-8">
         <Outlet />
       </div>
     </div>

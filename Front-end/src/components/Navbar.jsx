@@ -37,7 +37,7 @@ const Navbar = ({setShowLogin}) => {
         { name: 'About', path: '/about' },
     ];
 
-    const { userData, backendUrl, setUserData, getUserData, setIsOwner, setIsLoggedin, isOwner, logout } = useContext(AppContent);
+    const { userData, backendUrl,getUserData, logout } = useContext(AppContent);
 
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +63,10 @@ const Navbar = ({setShowLogin}) => {
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, [location.pathname]);
+
+    useEffect(()=>{
+     getUserData()
+    })
 
     return (
         <nav className={`
@@ -147,35 +151,35 @@ const Navbar = ({setShowLogin}) => {
                     
                 {/* User profile / Login button */}
                 {userData ? (
-  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 font-medium relative group cursor-pointer">
-    {(userData.name && userData.name[0]) ? userData.name[0].toUpperCase() : 'U'}
-    <div className="absolute hidden group-hover:block top-0 right-0 z-10 text-black rounded pt-10 cursor-pointer">
-      <ul className="list-none m-0 p-2 bg-gray-100 text-sm">
-        {!userData.isAccountVerified && (
-          <li 
-            onClick={sendVerificationOtp}
-            className="py-1 px-2 hover:bg-gray-200 cursor-pointer"
-          >
-            Verify email
-          </li>
-        )}
-        <li 
-          onClick={logout}
-          className="py-1 px-2 hover:bg-gray-200 cursor-pointer pr-10"
-        >
-          Logout
-        </li>
-      </ul>
-    </div>
-  </div>
-) : (
-  <button 
-    onClick={() => setShowLogin(true)} 
-    className="bg-black text-white px-8 py-2.5 rounded-full ml-4 transition-all duration-500 cursor-pointer"
-  >
-    Sign in
-  </button>
-)}
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 font-medium relative group cursor-pointer">
+                        {(userData.name && userData.name[0]) ? userData.name[0].toUpperCase() : 'U'}
+                        <div className="absolute hidden group-hover:block top-0 right-0 z-10 text-black rounded pt-10 cursor-pointer">
+                        <ul className="list-none m-0 p-2 bg-gray-100 text-sm">
+                            {!userData.isAccountVerified && (
+                            <li 
+                                onClick={sendVerificationOtp}
+                                className="py-1 px-2 hover:bg-gray-200 cursor-pointer"
+                            >
+                                Verify email
+                            </li>
+                            )}
+                            <li 
+                            onClick={logout}
+                            className="py-1 px-2 hover:bg-gray-200 cursor-pointer pr-10"
+                            >
+                            Logout
+                            </li>
+                        </ul>
+                        </div>
+                    </div>
+                    ) : (
+                    <button 
+                        onClick={() => setShowLogin(true)} 
+                        className="bg-black text-white px-8 py-2.5 rounded-full ml-4 transition-all duration-500 cursor-pointer"
+                    >
+                        Sign in
+                    </button>
+                )}
 
             </div>
 
