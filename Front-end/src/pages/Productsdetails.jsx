@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams ,Link} from 'react-router-dom';
 import { productBenefits } from '../assets/assets';
-import StarRating from '../Components/StarRating';
+import StarRating from '../components/StarRating';
 import { AppContent } from '../context/AppContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
