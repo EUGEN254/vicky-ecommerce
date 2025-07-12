@@ -26,7 +26,6 @@ const ProductDetails = () => {
   const { productsData, addToCart, fetchProducts } = useContext(AppContent);
 
   useEffect(() => {
-    window.scrollTo(0, 0); // ✅ scroll to top on mount
     if (productsData.length === 0) {
       fetchProducts();
     }

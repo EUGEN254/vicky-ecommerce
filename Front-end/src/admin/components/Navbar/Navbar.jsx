@@ -57,7 +57,7 @@ const Navbar = ({ toggleSidebar }) => {
   const firstLetter = adminData?.name?.[0]?.toUpperCase() || '';
 
   return (
-    <div className="flex justify-between items-center px-4 py-3 shadow-md sticky top-0 z-30 bg-gray-500 h-16">
+    <div className="flex justify-between items-center px-3 py-2 shadow-md sticky top-0 z-30 bg-gray-500 h-16">
       {/* Logo Section */}
       <div className="flex items-center">
         <button
@@ -69,7 +69,7 @@ const Navbar = ({ toggleSidebar }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <p className="text-xl font-bold font-serif text-black sm:hidden ml-3">
+        <p className="text-xl font-bold font-serif text-black sm:hidden ml-2">
           {adminData ? `${greeting}, ${firstName} 👋` : 'Welcome back 👋'}
         </p>
         <p className="hidden sm:block text-xl font-bold font-serif text-black">
