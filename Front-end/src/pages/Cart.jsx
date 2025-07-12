@@ -28,7 +28,7 @@ const Cart = () => {
               const cartItem = cartItems[item.id];
               if (cartItem && cartItem.quantity > 0) {
                 return (
-                  <div key={item._id}>
+                  <div key={item.id}>
                     <div className="grid grid-cols-6 items-center gap-4 text-black text-sm px-6 py-4 min-w-[768px]">
                       <img src={item.images[0]} alt="product" className="w-12 h-12 object-cover rounded" />
                       <div>

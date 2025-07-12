@@ -21,7 +21,7 @@ export const AppContextProvider = (props) => {
   const [cartItems, setCartItems] = useState({});
   const [orderList, setOrderList] = useState([]);
 
-  
+
   const [isOwner, setIsOwner] = useState(false);
 
   const logout = async () => {
@@ -45,51 +45,44 @@ export const AppContextProvider = (props) => {
   };
 
   const addToCart = (itemId, size, color, quantity = 1) => {
-    const product = productsData.find((p) => p.id === itemId);
-    if (!product || product.is_available === 0) {
-      toast.error('Product is not available. Please choose another.');
-      return;
-    }
-    setCartItems(prev => {
-      const existing = prev[itemId];
-      if (existing && existing.size === size && existing.color === color) {
-        return {
-          ...prev,
-          [itemId]: {
-            ...existing,
-            quantity: existing.quantity + quantity
-          }
-        };
-      } else {
-        return {
-          ...prev,
-          [itemId]: {
-            quantity,
-            size,
-            color
-          }
-        };
-      }
-    });
-  };
-
-  const removeFromCart = (itemId) => {
-    setCartItems(prev => {
-      const existing = prev[itemId];
-      if (!existing || existing.quantity <= 1) {
-        const updatedCart = { ...prev };
-        delete updatedCart[itemId];
-        return updatedCart;
-      }
+  const product = productsData.find((p) => p.id === itemId);
+  if (!product || !product.is_available) {
+    toast.error('Product is not available. Please choose another.');
+    return;
+  }
+  
+  setCartItems(prev => {
+    const existing = prev[itemId];
+    // Check if same size and color already exists
+    if (existing && existing.size === size && existing.color === color) {
       return {
         ...prev,
         [itemId]: {
           ...existing,
-          quantity: existing.quantity - 1
+          quantity: existing.quantity + quantity
         }
       };
-    });
-  };
+    } else {
+      // Either doesn't exist or different size/color - create new entry
+      return {
+        ...prev,
+        [itemId]: {
+          quantity,
+          size,
+          color,
+          // Add product details for easier access
+          productInfo: {
+            name: product.name,
+            price: product.price,
+            image: product.images[0]
+          }
+        }
+      };
+    }
+  });
+  
+  toast.success('Added to cart!');
+};
 
   const getTotalCartAmount = () => {
     let total = 0;
