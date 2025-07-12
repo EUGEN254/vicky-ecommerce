@@ -1,0 +1,37 @@
+/* Navbar.css */
+.admin-navbar {
+  height: 64px;
+  margin-left: 8px;
+}
+
+.Nav-profile {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #edf2f7;
+  color: #4a5568;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.Nav-profile:hover {
+  background-color: #e2e8f0;
+}
+
+/* Dropdown menu styles */
+.dropdown-menu {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .admin-navbar {
+    padding-left: 1rem;
+    margin-left: -8px;
+    padding-right: 1rem;
+  }
+}

@@ -12,11 +12,6 @@ import { ToastContainer } from 'react-toastify'
 import Payment from './pages/Payment'
 
 // Admin Pages
-import Addproduct from '../../Admin/src/components/Addproduct/Addproduct'
-import Listproduct from '../../Admin/src/components/Listproduct/Listproduct'
-import Login from '../../Admin/src/components/Login'
-import ProtectedRoute from './components/ProtectedRoute'
-import Layout from '../../Admin/src/pages/Admin/Layout'
 import { AppContent } from './context/AppContext'
 import EmailVerify from './components/credentials/EmailVerify'
 import ResestPassword from './components/credentials/ResestPassword'
@@ -25,16 +20,21 @@ import SafetyInformation from './pages/SafetyInformation'
 import ChatBotWidget from './components/ChatBotWidget'
 import AccessibilityWidget from './components/AccessibilityWidget'
 import CancellationOptions from './pages/CancellationOptions'
-import ContactUs from './pages/ContactUs'
-import Dashboard from '../../Admin/src/components/Dashboard'
-import Categories from '../../Admin/src/components/categories/Categories'
-import Orders from '../../Admin/src/components/orders/Orders'
-import Customers from '../../Admin/src/components/Customers/Customers'
-import Inventory from '../../Admin/src/components/inventory/Inventory'
-import Discounts from '../../Admin/src/components/Discounts.jsx/Discounts'
-import Settings from '../../Admin/src/components/settings/Settings'
-import Queries from '../../Admin/src/components/queries/Queries'
 import axios from 'axios'
+import Addproduct from './admin/components/Addproduct/Addproduct'
+import ListProduct from './admin/components/Listproduct/Listproduct'
+import Categories from './admin/components/categories/Categories'
+import Orders from './admin/components/orders/Orders'
+import Customers from './admin/components/Customers/Customers'
+import Inventory from './admin/components/inventory/Inventory'
+import Discounts from './admin/components/Discounts.jsx/Discounts'
+import Settings from './admin/components/settings/Settings'
+import Queries from './admin/components/queries/Queries'
+import Dashboard from './admin/components/Dashboard'
+import ContactUs from './pages/ContactUs'
+import Login from './admin/components/Login'
+import ProtectedRoute from './components/ProtectedRoute'
+import Layout from './admin/pages/Admin/Layout'
 
 function App() {
   const location = useLocation()
@@ -146,7 +146,7 @@ function App() {
           <Route path="/Admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Dashboard/>}/>
             <Route path="addproduct" element={<Addproduct />} />
-            <Route path="listproduct" element={<Listproduct />} />
+            <Route path="listproduct" element={<ListProduct />} />
             <Route path="categories" element={<Categories />} />
             <Route path="orders" element={<Orders />} />
             <Route path="customers" element={<Customers/>} />
