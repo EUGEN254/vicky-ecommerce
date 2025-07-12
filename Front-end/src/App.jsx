@@ -17,8 +17,6 @@ import EmailVerify from './components/credentials/EmailVerify'
 import ResestPassword from './components/credentials/ResestPassword'
 import About from './pages/About'
 import SafetyInformation from './pages/SafetyInformation'
-import ChatBotWidget from './components/ChatBotWidget'
-import AccessibilityWidget from './components/AccessibilityWidget'
 import CancellationOptions from './pages/CancellationOptions'
 import axios from 'axios'
 import Addproduct from './admin/components/Addproduct/Addproduct'
@@ -35,6 +33,8 @@ import ContactUs from './pages/ContactUs'
 import Login from './admin/components/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './admin/pages/Admin/Layout'
+import AccessibilityWidget from './components/AccessibilityWidget'
+import ChatBotWidget from './components/ChatBotWidget'
 
 function App() {
   const location = useLocation()
@@ -157,7 +157,9 @@ function App() {
           </Route>
         </Routes>
       </div>
+
       {!isAdminRoute && 
+
           <ChatBotWidget
             show={showChatbot}
             onClose={() => setShowChatbot(false)}

@@ -40,7 +40,7 @@ const ChatBotWidget = ({ show, onClose, onToggle }) => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 left-6 z-50">
       {show && (
         <div className="bg-white w-80 h-96 shadow-xl rounded-xl flex flex-col overflow-hidden border border-gray-200">
           <div className="bg-gray-800 text-white px-4 py-3 flex items-center justify-between">
