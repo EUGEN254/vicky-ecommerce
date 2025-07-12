@@ -23,7 +23,7 @@ export const getUserOrders = async (userId) => {
           FROM user_orders o
           JOIN products p ON o.productid = p.id
           LEFT JOIN categories c ON o.categoryid = c.id
-          WHERE o.user_id = ?;
+          WHERE o.id = ?;
         `, [userId]);
     return rows;
   } catch (error) {
