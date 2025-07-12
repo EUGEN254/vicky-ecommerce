@@ -1,32 +1,19 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { useParams ,Link} from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { productBenefits } from '../assets/assets';
 import StarRating from '../components/StarRating';
 import { AppContent } from '../context/AppContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
 import { 
-  FaTruck,          // Shipping
-  FaShieldAlt,      // Quality
-  FaExchangeAlt,    // Returns
-  FaHeadset,        // Support
-  FaStore ,          // Brand/store
-  FaLeaf,         // Eco-Friendly
-  FaTint,          // Waterproof
-  FaWind,          // Breathable
-  FaWeight,        // Lightweight
-  FaGripLines,     // Slip Resistant
-  FaSnowflake,     // Cold Resistant
-  FaFire,          // Heat Resistant
-  FaRunning,       // Running
-  FaWalking,       // Walking
-  FaBasketballBall 
+  FaTruck, FaShieldAlt, FaExchangeAlt, FaHeadset, FaStore,
+  FaLeaf, FaTint, FaWind, FaWeight, FaGripLines,
+  FaSnowflake, FaFire, FaRunning, FaWalking, FaBasketballBall 
 } from 'react-icons/fa';
-
-
 
 const ProductDetails = () => {
     const { id } = useParams();
+    const location = useLocation();
     const [product, setProduct] = useState(null);
     const [mainImage, setMainImage] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
@@ -35,13 +22,23 @@ const ProductDetails = () => {
     const [isAvailable, setIsAvailable] = useState(true);
     const [showAddAlert, setShowAddAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
-    const { productsData } = useContext(AppContent);
-    const { addToCart, fetchProducts } = useContext(AppContent);
+    const { productsData, addToCart, fetchProducts } = useContext(AppContent);
 
-    
+    // Scroll restoration fix
+    useEffect(() => {
+        window.history.scrollRestoration = 'manual';
+    }, []);
+
+    // Reset scroll position when product changes
+    useEffect(() => {
+        if (product) {
+            window.scrollTo(0, 0);
+        }
+    }, [product]);
+
     useEffect(() => {
         fetchProducts();
-    }, []);
+    }, [fetchProducts]);
 
     useEffect(() => {
         const foundProduct = productsData.find(product => product.id === id);
@@ -60,24 +57,43 @@ const ProductDetails = () => {
         '24/7 Support': <FaHeadset className="text-orange-500 text-xl" />
     };
 
-
     // Feature icon mapping
     const featureIcons = {
-      'Breathable': <FaWind className="w-4 h-4" />,
-      'Waterproof': <FaTint className="w-4 h-4" />,
-      'Slip Resistant': <FaGripLines className="w-4 h-4" />,
-      'Eco-Friendly': <FaLeaf className="w-4 h-4" />,
-      'Lightweight': <FaWeight className="w-4 h-4" />,
-      'Cold Resistant': <FaSnowflake className="w-4 h-4" />,
-      'Heat Resistant': <FaFire className="w-4 h-4" />,
-      'Running': <FaRunning className="w-4 h-4" />,
-      'Walking': <FaWalking className="w-4 h-4" />,
-      'Sports': <FaBasketballBall className="w-4 h-4" />
+        'Breathable': <FaWind className="w-4 h-4" />,
+        'Waterproof': <FaTint className="w-4 h-4" />,
+        'Slip Resistant': <FaGripLines className="w-4 h-4" />,
+        'Eco-Friendly': <FaLeaf className="w-4 h-4" />,
+        'Lightweight': <FaWeight className="w-4 h-4" />,
+        'Cold Resistant': <FaSnowflake className="w-4 h-4" />,
+        'Heat Resistant': <FaFire className="w-4 h-4" />,
+        'Running': <FaRunning className="w-4 h-4" />,
+        'Walking': <FaWalking className="w-4 h-4" />,
+        'Sports': <FaBasketballBall className="w-4 h-4" />
+    };
+
+    const handleAddToCart = () => {
+        if (!isAvailable) {
+            toast.error('Product is not available. Please choose another.');
+            return;
+        }
+        if (!selectedSize || !selectedColor) {
+            setAlertMessage('Please select size and color');
+            setShowAddAlert(true);
+            setTimeout(() => setShowAddAlert(false), 2000);
+            return;
+        }
+        addToCart(product.id, selectedSize, selectedColor, Number(quantity));
+        setAlertMessage('Added to cart!');
+        setShowAddAlert(true);
+        setTimeout(() => setShowAddAlert(false), 2000);
+    };
+
+    if (!product) {
+        return <div className="pt-28 px-4 md:px-16 lg:px-24 xl:px-32">Loading...</div>;
     }
 
-    return product && (
+    return (
         <div className='pt-28 md:py-35 px-4 md:px-16 lg:px-24 xl:px-32'>
-
             {/* Product Header */}
             <div className='flex flex-col md:flex-row items-start md:items-center gap-2'>
                 <h1 className="text-2xl font-bold">{product.name} <span className='font-inter text-sm'>({product.type || 'Premium'})</span></h1>
@@ -100,7 +116,7 @@ const ProductDetails = () => {
                     <img src={mainImage} alt="product" className='w-full rounded-xl shadow-lg object-cover' />
                 </div>
                 <div className='grid grid-cols-2 gap-4 lg:w-1/2 w-full'>
-                    {product?.images?.length > 1 && product.images.map((image, index) => (
+                    {product.images?.length > 1 && product.images.map((image, index) => (
                         <img 
                             key={index} 
                             onClick={() => setMainImage(image)} 
@@ -118,10 +134,10 @@ const ProductDetails = () => {
                     <h1 className='text-3xl md:text-4xl font-playfair'>{product.name} Features</h1>
                     <div className='flex flex-wrap items-center mt-3 mb-6 gap-4'>
                         {(product.features || []).map((feature, index) => (
-                                         <div key={index} className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70'>
-                                           {featureIcons[feature] || <FaWind className="w-4 h-4" />}
-                                           <p className='text-xs'>{feature}</p>
-                                         </div>
+                            <div key={index} className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70'>
+                                {featureIcons[feature] || <FaWind className="w-4 h-4" />}
+                                <p className='text-xs'>{feature}</p>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -199,22 +215,7 @@ const ProductDetails = () => {
 
                 <button
                     type="button"
-                    onClick={() => {
-                        if (!isAvailable) {
-                            toast.error('Product is not available. Please choose another.');
-                            return;
-                        }
-                        if (!selectedSize || !selectedColor) {
-                            setAlertMessage('Please select size and color');
-                            setShowAddAlert(true);
-                            setTimeout(() => setShowAddAlert(false), 2000);
-                            return;
-                        }
-                        addToCart(product.id, selectedSize, selectedColor, Number(quantity));
-                        setAlertMessage('Added to cart!');
-                        setShowAddAlert(true);
-                        setTimeout(() => setShowAddAlert(false), 2000);
-                    }}
+                    onClick={handleAddToCart}
                     className='bg-primary hover:bg-primary-dull active:scale-95 transition-all text-white rounded-md max-md:w-full max-md:mt-6 md:px-25 py-3 md:py-4 text-base cursor-pointer'
                 >
                     {isAvailable ? 'Add to Cart' : "Out of Stock"}
@@ -261,7 +262,7 @@ const ProductDetails = () => {
                     </div>
                 </div>
                 <Link 
-                    to ={'/Allcollection'}
+                    to='/Allcollection'
                     className='px-6 py-2 mt-4 rounded text-white bg-primary hover:bg-primary-dull transition-all cursor-pointer'
                 >
                     View More Products
