@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react'
 import { assets } from '../assets/assets'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import StarRating from '../Components/StarRating'
+import StarRating from '../components/StarRating'
 import { AppContent } from '../context/AppContext'
 import axios from 'axios'
 import { 
