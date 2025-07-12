@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'
 import Navbar from './components/Navbar'
-import Footer from './Components/Footer'
+import Footer from './components/Footer'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Allcollection from './pages/AllCollection'
