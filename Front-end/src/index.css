@@ -9,6 +9,13 @@
   --color-secondary: #FBBF24;
 }
 
+
+/* Add this instead */
+body {
+  overflow-x: hidden;
+  position: relative;
+}
+
 * {
   font-family: "Outfit", sans-serif;
 }

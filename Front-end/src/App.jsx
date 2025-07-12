@@ -102,18 +102,9 @@ function App() {
   }
   
   
-
-  const ScrollToTop = () => {
-    const { pathname } = useLocation()
-    useEffect(() => {
-      window.scrollTo(0, 0)
-    }, [pathname])
-    return null
-  }
-
   return (
     <div className={`min-h-screen  transition-opacity duration-700 ${showPreloader ? 'opacity-0' : 'opacity-100'}`}>
-      <ScrollToTop />
+      
       <ToastContainer position="top-center" autoClose={2000} />
 
       {/* Frontend Navbar */}
@@ -124,6 +115,7 @@ function App() {
 
       <div className="min-h-[70vh]">
         <Routes>
+          
           {/* Frontend Pages */}
           <Route path="/" element={<Home />} />
           <Route path="/Allcollection" element={<Allcollection />} />

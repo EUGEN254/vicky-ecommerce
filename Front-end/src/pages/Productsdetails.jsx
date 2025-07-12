@@ -28,23 +28,16 @@ const scrollPosition = useRef(0);
   const { productsData, addToCart, fetchProducts } = useContext(AppContent);
 
   useEffect(() => {
-    // Disable browser's automatic scroll restoration
-    if ('scrollRestoration' in window.history) {
+    // Prevent automatic scrolling on mount
+    if (window.history.scrollRestoration) {
       window.history.scrollRestoration = 'manual';
     }
-
-    // Track scroll position
-    const handleScroll = () => {
-      scrollPosition.current = window.scrollY;
-      if (window.scrollY > 10) {
-        hasUserScrolled.current = true;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
     
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      // Cleanup
+      if (window.history.scrollRestoration) {
+        window.history.scrollRestoration = 'auto';
+      }
     };
   }, []);
 
