@@ -1,0 +1,14 @@
+.nav-cart-count{
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: -35px;
+    margin-left: 13px;
+    border-radius: 11px;
+    background-color: grey;
+    color: white;
+    font-size: 14px;
+}
