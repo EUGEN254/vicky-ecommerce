@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { productBenefits } from '../assets/assets';
 import StarRating from '../components/StarRating';
@@ -22,13 +22,30 @@ const ProductDetails = () => {
   const [isAvailable, setIsAvailable] = useState(true);
   const [showAddAlert, setShowAddAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+const hasUserScrolled = useRef(false);
+const scrollPosition = useRef(0);
 
   const { productsData, addToCart, fetchProducts } = useContext(AppContent);
 
   useEffect(() => {
-    if (productsData.length === 0) {
-      fetchProducts();
+    // Disable browser's automatic scroll restoration
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
     }
+
+    // Track scroll position
+    const handleScroll = () => {
+      scrollPosition.current = window.scrollY;
+      if (window.scrollY > 10) {
+        hasUserScrolled.current = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -38,6 +55,10 @@ const ProductDetails = () => {
       setMainImage(foundProduct.images[0]);
       setIsAvailable(foundProduct.is_available);
     }
+    // Only scroll to top if the user hasn't scrolled manually
+    if (!hasUserScrolled.current) {
+        window.scrollTo(0, 0);
+      }
   }, [productsData, id]);
 
   const benefitIcons = {
