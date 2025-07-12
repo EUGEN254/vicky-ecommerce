@@ -56,17 +56,17 @@ const Payment = () => {
   
       if (response.data.success) {
         const checkPayment = async (attempts = 0) => {
-          if (attempts >= 30) { // Increased from 10 to 30 attempts (1 minute total)
+          if (attempts >= 10) { // Increased from 10 to 30 attempts (1 minute total)
             setMpesaStage('failed');
             return;
           }
   
           try {
-            const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
+            const { data } = await axios.get(`${backendUrl}/api/orders/:${orderId}`);
             
             if (data.is_paid) {
               setMpesaStage('success');
-              const user = JSON.parse(localStorage.getItem('userData'));
+              const user = userData;
               setCartItems({});
               if (user?.id) {
                 localStorage.removeItem(`cart_${user.id}`);
@@ -125,7 +125,7 @@ const Payment = () => {
           return {
             productid: product.id,
             categoryid: product.category_id || null,
-            user_id: user.id, // Add user ID to the order
+            userId: user.id,
             quantity: item.quantity,
             selected_size: item.size,
             selected_color: item.color,
