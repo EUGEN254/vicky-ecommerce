@@ -120,6 +120,7 @@ export const AppContextProvider = (props) => {
 
   const getUserData = async () => {
     try {
+      axios.defaults.withCredentials = true
       const { data } = await axios.get(backendUrl + '/api/user/data', { withCredentials: true });
       if (data.success) {
         console.log("here eugen",data);
