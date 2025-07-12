@@ -80,6 +80,11 @@ const scrollPosition = useRef(0);
     'Walking': <FaWalking className="w-4 h-4" />,
     'Sports': <FaBasketballBall className="w-4 h-4" />
   };
+  
+useEffect(() => {
+    console.log('Current scroll position:', scrollPosition.current);
+    console.log('Has user scrolled:', hasUserScrolled.current);
+  }, [scrollPosition.current]);
 
   return product && (
     <div className='pt-28 md:py-35 px-4 md:px-16 lg:px-24 xl:px-32'>
@@ -264,8 +269,5 @@ const scrollPosition = useRef(0);
   );
 };
 
-useEffect(() => {
-  console.log('Has user scrolled:', hasUserScrolled.current);
-}, [scrollPosition.current]);
 
 export default ProductDetails;
