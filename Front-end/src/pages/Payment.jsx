@@ -64,7 +64,7 @@ const Payment = () => {
           try {
             const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
             
-            if (data.order?.is_paid) {
+            if (data.is_paid) {
               setMpesaStage('success');
               const user = JSON.parse(localStorage.getItem('userData'));
               setCartItems({});
