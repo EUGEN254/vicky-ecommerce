@@ -15,9 +15,7 @@ const Navbar = ({ toggleSidebar }) => {
 
   const adminLogout = async () => {
     try {
-      const { data } = await axios.post(`${backendUrl}/api/admin/logout`, { 
-        withCredentials: true 
-      });
+      const { data } = await axios.post(`${backendUrl}/api/admin/logout`, { withCredentials: true });
       if (data.success) {
         setAdminLoggedIn(false);
         setAdminData(null);
@@ -31,20 +29,13 @@ const Navbar = ({ toggleSidebar }) => {
 
   useEffect(() => {
     getAdminData();
-    // Set time-based greeting
     const hour = new Date().getHours();
-    if (hour < 12) {
-      setGreeting('Good morning');
-    } else if (hour < 18) {
-      setGreeting('Good afternoon');
-    } else {
-      setGreeting('Good evening');
-    }
+    setGreeting(hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
   }, []);
 
   useEffect(() => {
     let intervalId;
-  
+
     const fetchQueryCount = async () => {
       try {
         const { data } = await axios.get(`${backendUrl}/api/messages/userQuery`);
@@ -53,14 +44,17 @@ const Navbar = ({ toggleSidebar }) => {
           setUnreadCount(unanswered);
         }
       } catch (err) {
-        console.error("Error fetching query count");
+        console.error("Error fetching query count", err);
       }
     };
-  
-    fetchQueryCount(); // initial fetch
+
+    fetchQueryCount();
     intervalId = setInterval(fetchQueryCount, 30000);
     return () => clearInterval(intervalId);
   }, [backendUrl]);
+
+  const firstName = adminData?.name?.split(' ')[0] || '';
+  const firstLetter = adminData?.name?.[0]?.toUpperCase() || '';
 
   return (
     <div className="flex justify-between items-center px-4 py-3 shadow-md sticky top-0 z-30 bg-gray-500 h-16">
@@ -76,16 +70,16 @@ const Navbar = ({ toggleSidebar }) => {
           </svg>
         </button>
         <p className="text-xl font-bold font-serif text-black sm:hidden ml-3">
-          {adminData ? `${greeting}, ${adminData.name.split(' ')[0]} 👋` : 'Welcome back 👋'}
+          {adminData ? `${greeting}, ${firstName} 👋` : 'Welcome back 👋'}
         </p>
         <p className="hidden sm:block text-xl font-bold font-serif text-black">
           {adminData ? `${greeting}, ${adminData.name} 👋` : 'Welcome back 👋'}
         </p>
       </div>
 
-      {/* Right Section - Notification and Profile */}
+      {/* Right Section */}
       <div className="flex items-center gap-4">
-        {adminData && adminData.name ? (
+        {adminData?.name ? (
           <div className="flex items-center gap-4">
             {/* Notification Bell */}
             <Link to="/Admin/queries" className="relative">
@@ -96,15 +90,15 @@ const Navbar = ({ toggleSidebar }) => {
                 </span>
               )}
             </Link>
-            
-            {/* Profile Dropdown */}
+
+            {/* Dropdown */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-2 focus:outline-none"
               >
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 font-medium cursor-pointer hover:bg-gray-300 transition-all duration-200">
-                  {adminData.name[0]?.toUpperCase()}
+                  {firstLetter}
                 </div>
                 <span className="hidden md:inline-block">{adminData.name}</span>
               </button>
@@ -139,7 +133,7 @@ const Navbar = ({ toggleSidebar }) => {
             </div>
           </div>
         ) : (
-          <img src={assets.facebookIcon} className="w-8 h-8 rounded-full" alt="" />
+          <img src={assets.facebookIcon} className="w-8 h-8 rounded-full" alt="Admin Avatar" />
         )}
       </div>
     </div>
