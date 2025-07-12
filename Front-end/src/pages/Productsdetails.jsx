@@ -264,4 +264,9 @@ const scrollPosition = useRef(0);
   );
 };
 
+useEffect(() => {
+  console.log('Current scroll position:', scrollPosition.current);
+  console.log('Has user scrolled:', hasUserScrolled.current);
+}, [scrollPosition.current]);
+
 export default ProductDetails;
