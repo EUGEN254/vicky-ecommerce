@@ -231,9 +231,6 @@ export const AppContextProvider = (props) => {
   }, [productsData]);
   
 
-  useEffect(() => {
-    console.log("userData:", userData);
-  }, [userData]);
   const value = {
     backendUrl,
     dashboardata,

@@ -38,10 +38,7 @@ const ProductDetails = () => {
     const { productsData } = useContext(AppContent);
     const { addToCart, fetchProducts } = useContext(AppContent);
 
-    useEffect(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, []);
-
+    
     useEffect(() => {
         fetchProducts();
     }, []);
