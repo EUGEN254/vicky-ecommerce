@@ -47,24 +47,32 @@ const Payment = () => {
   const handleMpesaPayment = async (orderId) => {
     try {
       setMpesaStage('processing');
+      console.log(orderId);
+      
       
       const response = await axios.post(`${backendUrl}/mpesa/stkpush`, {
         phone: formData.phone,
         amount: mpesaAmount,
         orderId: orderId
       });
+      console.log("gere is the response",response);
+      console.log("here is the form habdl mpesa",orderId)
+      
   
-      if (response.data.success) {
+      if (response.success) {
         const checkPayment = async (attempts = 0) => {
-          if (attempts >= 10) { // Increased from 10 to 30 attempts (1 minute total)
+          if (attempts >= 10) { 
             setMpesaStage('failed');
             return;
           }
   
           try {
-            const { data } = await axios.get(`${backendUrl}/api/orders/:${orderId}`);
+            const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
+            console.log("here is the ",data);
+            console.log("here",data);
             
-            if (data.is_paid) {
+            
+            if (data?.order?.is_paid) {
               setMpesaStage('success');
               const user = userData;
               setCartItems({});
@@ -149,6 +157,8 @@ const Payment = () => {
         orders: newOrders,
         userId: user.id 
       });
+      console.log("her is fro orders",data);
+      
       
       if (data.success) {
         if (paymentMethod === 'Mpesa') {
