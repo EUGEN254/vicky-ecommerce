@@ -170,11 +170,15 @@ export const AppContextProvider = (props) => {
   };
 
   const fetchUserOrders = async () => {
+    if (!userData?.id) return;
+    
     try {
-      const { data } = await axios.get(backendUrl + '/api/orders');
-      if (data.success) setUserOrders(data.data);
+      const response = await axios.get(`${backendUrl}/api/orders?userId=${userData.id}`);
+      if (response.data.success) {
+        setUserOrders(response.data.data);
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to fetch orders");
+      console.error("Fetch orders error:", error);
     }
   };
 

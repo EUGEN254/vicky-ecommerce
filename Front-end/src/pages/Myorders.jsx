@@ -8,6 +8,7 @@ const MyOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    console.log("Current orders:", userOrders);
     fetchUserOrders();
   }, []);
 

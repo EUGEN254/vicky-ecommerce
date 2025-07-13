@@ -73,7 +73,7 @@ const Payment = () => {
             
             
             if (data.order?.is_paid) {
-              
+ 
               setMpesaStage('success');
               const user = userData;
               setCartItems({});
@@ -158,7 +158,7 @@ const Payment = () => {
         orders: newOrders,
         userId: user.id 
       });
-      console.log("her is fro orders",data);
+      
       
       
       if (data.success) {
