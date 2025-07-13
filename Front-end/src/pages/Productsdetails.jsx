@@ -5,6 +5,7 @@ import StarRating from '../components/StarRating';
 import { AppContent } from '../context/AppContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
+import axios from 'axios'
 
 import {
   FaTruck, FaShieldAlt, FaExchangeAlt, FaHeadset, FaStore,
@@ -22,37 +23,26 @@ const ProductDetails = () => {
   const [isAvailable, setIsAvailable] = useState(true);
   const [showAddAlert, setShowAddAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-const hasUserScrolled = useRef(false);
-const scrollPosition = useRef(0);
 
-  const { productsData, addToCart, fetchProducts } = useContext(AppContent);
+  const { productsData, addToCart, exclusiveOffers} = useContext(AppContent);
 
+  
   useEffect(() => {
-    // Prevent automatic scrolling on mount
-    if (window.history.scrollRestoration) {
-      window.history.scrollRestoration = 'manual';
-    }
+    const allProducts = [...productsData, ...exclusiveOffers];
+    const found = allProducts.find(p => String(p.id) === id);
+    console.log("here",allProducts);
     
-    return () => {
-      // Cleanup
-      if (window.history.scrollRestoration) {
-        window.history.scrollRestoration = 'auto';
-      }
-    };
-  }, []);
 
-  useEffect(() => {
-    const foundProduct = productsData.find(product => product.id === id);
-    if (foundProduct) {
-      setProduct(foundProduct);
-      setMainImage(foundProduct.images[0]);
-      setIsAvailable(foundProduct.is_available);
+    if (found) {
+      setProduct(found);
+      setMainImage(found.image?.[0] || '');
+      setIsAvailable(found.is_available ?? true);
     }
-    // Only scroll to top if the user hasn't scrolled manually
-    if (!hasUserScrolled.current) {
-        window.scrollTo(0, 0);
-      }
-  }, [productsData, id]);
+  }, [productsData, exclusiveOffers, id]);
+
+  if (!product) return <p>Loading...</p>;
+  
+  
 
   const benefitIcons = {
     'Premium Quality': <FaShieldAlt className="text-orange-500 text-xl" />,
@@ -73,11 +63,10 @@ const scrollPosition = useRef(0);
     'Walking': <FaWalking className="w-4 h-4" />,
     'Sports': <FaBasketballBall className="w-4 h-4" />
   };
+
   
-useEffect(() => {
-    console.log('Current scroll position:', scrollPosition.current);
-    console.log('Has user scrolled:', hasUserScrolled.current);
-  }, [scrollPosition.current]);
+  
+
 
   return product && (
     <div className='pt-28 md:py-35 px-4 md:px-16 lg:px-24 xl:px-32'>
@@ -100,14 +89,14 @@ useEffect(() => {
           <img src={mainImage} alt="product" className='w-full rounded-xl shadow-lg object-cover' />
         </div>
         <div className='grid grid-cols-2 gap-4 lg:w-1/2 w-full'>
-          {product?.images?.map((image, index) => (
-            <img
-              key={index}
-              onClick={() => setMainImage(image)}
-              src={image}
-              alt="product"
-              className={`w-full rounded-xl shadow-md object-cover cursor-pointer ${mainImage === image ? 'ring-2 ring-orange-500' : ''}`}
-            />
+        {(product.images || product.image || []).map((image, index) => (
+          <img
+            key={index}
+            onClick={() => setMainImage(image)}
+            src={image}
+            alt="product"
+            className={`w-full rounded-xl shadow-md object-cover cursor-pointer ${mainImage === image ? 'ring-2 ring-orange-500' : ''}`}
+          />
           ))}
         </div>
       </div>

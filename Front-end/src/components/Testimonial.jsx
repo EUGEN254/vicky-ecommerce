@@ -1,9 +1,12 @@
-import React from 'react'
+import React, { useContext, useEffect } from 'react'
 import Title from './Title'
-import { testimonials } from '../assets/assets'
 import StarRating from './StarRating'
+import { AppContent } from '../context/AppContext'
 
 const Testimonial = () => {
+    const {testimonials} = useContext(AppContent)
+
+
   return (
     <div className='flex flex-col items-center px-6 md:px-16 lg:px-24 bg-slate-50 pt-20 pb-30'>
         <Title 

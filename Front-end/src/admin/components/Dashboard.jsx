@@ -75,9 +75,9 @@ const Dashboard = () => {
 
       {/* Monthly Performance Graphs - stacked on mobile */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded shadow">
+        <div className="bg-white  p-4 sm:p-6 rounded shadow">
           <h3 className="text-md sm:text-lg font-semibold mb-3 sm:mb-4">Monthly Products Added</h3>
-          <div className="h-64 sm:h-80">
+          <div className="h-60 sm:h-60 w-70 ">
             <Bar 
               data={productChartData} 
               options={{ 
@@ -91,7 +91,7 @@ const Dashboard = () => {
 
         <div className="bg-white p-4 sm:p-6 rounded shadow">
           <h3 className="text-md sm:text-lg font-semibold mb-3 sm:mb-4">Monthly Revenue (Ksh)</h3>
-          <div className="h-64 sm:h-80">
+          <div className="h-60 sm:h-60 w-70">
             <Bar 
               data={revenueChartData} 
               options={{ 
@@ -105,17 +105,17 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Orders */}
-      <h2 className="text-lg sm:text-xl text-blue-950/70 font-medium mt-8 sm:mt-12 mb-4 sm:mb-5">Recent Orders</h2>
+      <h2 className="text-lg sm:text-xl text-black font-bold border-b-2 w-fit mt-8 sm:mt-12 mb-4 sm:mb-5">Recent Orders</h2>
       <div className="flex flex-col gap-4 mb-4">
         <input
           type="text"
           placeholder="Search by Order ID or Product Name"
-          className="border border-gray-300 px-3 py-2 rounded w-full"
+          className="border border-gray-700 px-3 py-2 rounded w-full"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
         />
         <select
-          className="border border-gray-300 px-3 py-2 rounded w-full sm:w-auto"
+          className="border border-gray-700 px-3 py-2 rounded w-full sm:w-auto"
           value={filterPaid}
           onChange={(e) => setFilterPaid(e.target.value)}
         >
@@ -125,14 +125,15 @@ const Dashboard = () => {
         </select>
       </div>
 
-      <div className="w-full text-left border border-gray-300 rounded-lg max-h-96 overflow-x-auto">
+      <div className="w-full text-left border  border-gray-900 rounded-lg max-h-96 overflow-x-auto">
         <table className="w-full min-w-[600px] sm:min-w-0">
           <thead className="bg-gray-50">
             <tr>
               <th className="py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base text-gray-800 font-medium">Order ID</th>
               <th className="py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base text-gray-800 font-medium">Product</th>
+              <th className="py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base text-gray-800 font-medium">Shipping Address</th>
               <th className="py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base text-gray-800 font-medium text-center">Amount</th>
-              <th className="py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base text-gray-800 font-medium text-center">Status</th>
+              <th className="py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base text-gray-800 font-medium text-center">Payment Status</th>
             </tr>
           </thead>
           <tbody className="text-xs sm:text-sm">
@@ -166,7 +167,7 @@ const Dashboard = () => {
         return (
           <tr key={orderId} className="border-t border-gray-300">
             <td className="py-2 px-3 sm:py-3 sm:px-4 text-gray-700">
-              #{orderId.substring(Math.max(0, orderId.length - 8))}
+              {orderId.substring(Math.max(0, orderId.length - 8))}
             </td>
             <td className="py-2 px-3 sm:py-3 sm:px-4 text-gray-700">
               <div className="font-medium">{productName}</div>
@@ -175,6 +176,19 @@ const Dashboard = () => {
                 {order.selected_color && ` • Color: ${order.selected_color}`}
                 {quantity && ` • Qty: ${quantity}`}
               </div>
+            </td>
+            <td className="py-2 px-3 sm:py-3 sm:px-4 text-gray-700 text-center">
+                {order.shipping_address ? (
+                  <div className="text-left">
+                    <p className="font-medium">{order.shipping_address.name}</p>
+                    <p className="text-sm text-gray-600">{order.shipping_address.address}</p>
+                    <p className="text-sm text-gray-600">{order.shipping_address.city}</p>
+                    <p className="text-sm text-gray-600">{order.shipping_address.phone}</p>
+                    <p className="text-sm text-gray-600">{order.shipping_address.email}</p>
+                  </div>
+                ) : (
+                  'No address specified'
+                )}
             </td>
             <td className="py-2 px-3 sm:py-3 sm:px-4 text-gray-700 text-center">
               {currency}{parseFloat(totalAmount).toFixed(2)}

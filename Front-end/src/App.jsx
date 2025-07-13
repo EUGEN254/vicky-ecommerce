@@ -35,6 +35,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './admin/pages/Admin/Layout'
 import AccessibilityWidget from './components/AccessibilityWidget'
 import ChatBotWidget from './components/ChatBotWidget'
+import ExclusiveOffer from './admin/components/exclusiveoffer/ExclusiveOffer'
 
 function App() {
   const location = useLocation()
@@ -59,7 +60,6 @@ function App() {
       const checkMaintenance = async () => {
         try {
           const res = await axios.get(backendUrl + '/api/settings/config');
-          console.log("Maintenance mode from backend:", res.data.maintenance); 
           setMaintenanceMode(res.data.maintenance);
         } catch (err) {
           console.error("Failed to check maintenance status");
@@ -139,6 +139,7 @@ function App() {
             <Route index element={<Dashboard/>}/>
             <Route path="addproduct" element={<Addproduct />} />
             <Route path="listproduct" element={<ListProduct />} />
+            <Route path="addoffer" element={<ExclusiveOffer />} />
             <Route path="categories" element={<Categories />} />
             <Route path="orders" element={<Orders />} />
             <Route path="customers" element={<Customers/>} />
@@ -150,20 +151,20 @@ function App() {
         </Routes>
       </div>
 
-      {!isAdminRoute && 
-
+      {!isAdminRoute && (
+        <>
           <ChatBotWidget
             show={showChatbot}
             onClose={() => setShowChatbot(false)}
             onToggle={() => setShowChatbot(prev => !prev)}
-          /> &&
-
+          />
           <AccessibilityWidget
             show={showAccessibility}
             onClose={() => setShowAccessibility(false)}
             onToggle={() => setShowAccessibility(prev => !prev)}
           />
-      }
+        </>
+      )}
       {/* Frontend Footer */}
       {!isAdminRoute && <Footer
         setShowLogin={setShowLogin}

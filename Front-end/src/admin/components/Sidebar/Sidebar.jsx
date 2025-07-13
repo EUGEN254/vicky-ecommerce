@@ -12,6 +12,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const menuItems = [
     { name: 'Dashboard', icon: <FiGrid />, path: '/Admin' },
     { name: 'Add Product', icon: <FiPlusSquare />, path: '/Admin/addproduct' },
+    { name: 'Add Offer', icon: <FiPlusSquare />, path: '/Admin/addoffer' },
     { name: 'Product List', icon: <FiList />, path: '/Admin/listproduct' },
     { name: 'Categories', icon: <FiTag />, path: '/Admin/categories' },
     { name: 'Orders', icon: <FiShoppingBag />, path: '/Admin/orders' },
@@ -23,7 +24,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   ];
 
   const SidebarContent = () => (
-    <div className="px-4 py-6 h-full flex flex-col bg-white shadow-md">
+    <div className="px-3 py-6 h-full flex flex-col bg-white shadow-md">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Admin Panel</h2>
@@ -50,7 +51,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             }`}
           >
             <span className="text-lg hover:animate-shake ">{item.icon}</span>
-            <span>{item.name}</span>
+            <span className='font-bold text-black'>{item.name}</span>
           </Link>
         ))}
       </nav>

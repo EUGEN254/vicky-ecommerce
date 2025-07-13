@@ -160,27 +160,27 @@ const Addproduct = () => {
   };
 
   return (
-    <form onSubmit={onSubmitHandler} className="max-w-4xl mx-auto">
+    <form onSubmit={onSubmitHandler} className="max-w-5xl mx-auto">
       <Title className="px-6" align="left" font="outfit" title="Add Shoe" subTitle="Add new shoe products to your inventory" />
 
       {/* Images Section */}
       <div className='px-6'>
-        <p className="text-gray-800 font-medium mb-2 mt-5">Product Images</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <p className="text-gray-800 border-b-2 w-fit font-medium mb-2 mt-5">Product Images</p>
+        <div className="grid grid-cols-2 border py-4 px-8 w-fit sm:grid-cols-4 gap-2">
           {Object.keys(images).map((key) => (
             <label 
               htmlFor={`shoeImage${key}`} 
               key={key} 
               className="relative group cursor-pointer"
             >
-              <div>
+              <div className='ml-2'>
                 <img
                   className="aspect-square w-full h-full sm:w-32 mt-10 rounded-lg flex items-center justify-center"
                   src={images[key] ? URL.createObjectURL(images[key]) : assets.uploadArea}
                   alt="upload"
                 />
-                <div className="mt-2 inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex">
-                  <span className="text-white bg-blue-800 px-4 py-2 rounded-full group-hover:opacity-100 transition-opacity">
+                <div className="mt-3 inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex">
+                  <span className="text-white bg-blue-800 px-4 ml-4 py-2 rounded-full group-hover:opacity-100 transition-opacity">
                     {images[key] ? 'Change' : 'Upload'}
                   </span>
                 </div>

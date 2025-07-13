@@ -57,7 +57,7 @@ const Navbar = ({ toggleSidebar }) => {
   const firstLetter = adminData?.name?.[0]?.toUpperCase() || '';
 
   return (
-    <div className="flex justify-between items-center px-3 py-2 shadow-md sticky top-0 z-30 bg-gray-500 h-16">
+    <div className="flex justify-between items-center ml-1 px-3 py-1 mt-1 mr-1 shadow-md sticky top-0 z-30 bg-blue-200 h-14">
       {/* Logo Section */}
       <div className="flex items-center">
         <button
@@ -78,7 +78,7 @@ const Navbar = ({ toggleSidebar }) => {
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 ">
         {adminData?.name ? (
           <div className="flex items-center gap-4">
             {/* Notification Bell */}

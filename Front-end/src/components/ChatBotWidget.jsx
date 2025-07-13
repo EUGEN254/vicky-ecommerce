@@ -15,13 +15,10 @@ const ChatBotWidget = ({ show, onClose, onToggle }) => {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage =
-     { 
+    const userMessage = { 
       from: 'user', 
-      text: input ,
-      
+      text: input,
     };
-
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
@@ -40,29 +37,35 @@ const ChatBotWidget = ({ show, onClose, onToggle }) => {
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+      {/* Chat Interface */}
       {show && (
-        <div className="bg-white w-80 h-96 shadow-xl rounded-xl flex flex-col overflow-hidden border border-gray-200">
+        <div className="bg-white w-80 h-96 shadow-xl rounded-xl flex flex-col overflow-hidden border border-gray-200 mb-2">
           <div className="bg-gray-800 text-white px-4 py-3 flex items-center justify-between">
             <span className="font-semibold">GracieBot</span>
-            <X onClick={onClose} className="cursor-pointer hover:scale-110 transition-transform" />
+            <X 
+              onClick={onClose} 
+              className="cursor-pointer hover:scale-110 transition-transform" 
+              size={20}
+            />
           </div>
           <div className="flex-1 p-3 overflow-y-auto space-y-2 text-sm">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
                 className={`p-2 rounded max-w-[75%] ${
-                  msg.from === 'user' ? 'bg-black text-white self-end' : 'bg-gray-200 text-black self-start'
+                  msg.from === 'user' 
+                    ? 'bg-black text-white ml-auto' 
+                    : 'bg-gray-200 text-black mr-auto'
                 }`}
               >
                 {msg.text}
               </div>
-              
             ))}
           </div>
           <div className="p-2 border-t flex">
             <input
-              className="flex-1 px-3 py-1 border rounded-l text-sm"
+              className="flex-1 px-3 py-2 border rounded-l text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
               placeholder="Type your message..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -70,7 +73,7 @@ const ChatBotWidget = ({ show, onClose, onToggle }) => {
             />
             <button
               onClick={sendMessage}
-              className="bg-black text-white px-3 py-1 rounded-r text-sm"
+              className="bg-black text-white px-4 py-2 rounded-r text-sm hover:bg-gray-800 transition-colors"
             >
               Send
             </button>
@@ -78,13 +81,13 @@ const ChatBotWidget = ({ show, onClose, onToggle }) => {
         </div>
       )}
 
-      {/* Always-visible toggle button */}
+      {/* Toggle Button */}
       <button
-        className="bg-black text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform"
+        className="bg-black text-white p-3 rounded-full shadow-lg hover:scale-110 transition-transform"
         onClick={onToggle}
         aria-label="Toggle ChatBot"
       >
-        <MessageCircle />
+        <MessageCircle size={24} />
       </button>
     </div>
   );

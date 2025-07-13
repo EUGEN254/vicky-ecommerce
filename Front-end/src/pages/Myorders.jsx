@@ -2,13 +2,13 @@ import React, { useState, useContext, useEffect } from 'react';
 import { assets } from '../assets/assets';
 import Title from '../components/Title';
 import { AppContent } from '../context/AppContext';
+import { Link } from 'react-router-dom';
 
 const MyOrders = () => {
   const { userOrders, fetchUserOrders } = useContext(AppContent);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    console.log("Current orders:", userOrders);
     fetchUserOrders();
   }, []);
 
@@ -71,7 +71,6 @@ const MyOrders = () => {
                   <span>{order.shipping_address?.city}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <img src={assets.guestsIcon} alt="qty" className="w-4 h-4" />
                   <span>Qty: {order.quantity}</span>
                 </div>
                 <p className="text-base font-medium text-gray-800">
@@ -112,9 +111,10 @@ const MyOrders = () => {
                 </p>
               </div>
               {!order.is_paid && (
-                <button className="px-4 py-1.5 mt-4 text-xs border border-gray-400 rounded-full hover:bg-gray-100 transition-all cursor-pointer">
+                <Link to={'/payment'}
+                className="px-4 py-1.5 mt-4 text-xs border border-gray-400 rounded-full hover:bg-gray-100 transition-all cursor-pointer">
                   Pay Now
-                </button>
+                </Link>
               )}
             </div>
           </div>

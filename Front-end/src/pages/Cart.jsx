@@ -53,7 +53,7 @@ const Cart = () => {
       </div>
 
       {/* Bottom Section */}
-      <div className="mt-20 flex flex-col lg:flex-row justify-between gap-8 px-4">
+      <div className="mt-20 flex flex-col w-100 lg:flex-row justify-between gap-8 px-4">
         {/* Cart Totals */}
         <div className="flex-1 flex flex-col gap-6">
           <h2 className="text-xl font-semibold">Cart Totals</h2>
@@ -81,8 +81,8 @@ const Cart = () => {
           )}
         </div>
 
-        {/* Promo Code */}
-        <div className="flex-1">
+        {/* Promo Code//on mantainance}
+        {/* <div className="flex-1">
           <p className="text-gray-600 mb-2">If you have promo code, enter it here</p>
           <div className="flex items-center bg-gray-200 rounded overflow-hidden">
             <input
@@ -102,7 +102,7 @@ const Cart = () => {
               Submit
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
 
     </div>

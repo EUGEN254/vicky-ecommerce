@@ -17,9 +17,6 @@ const Queries = () => {
     try {
       axios.defaults.withCredentials = true;
       const { data } = await axios.get(`${backendUrl}/api/messages/userQuery`);
-      console.log(data);
-      
-
       if (data.success) {
         setQueries(data.data);
         setAllQueries(data.data);
