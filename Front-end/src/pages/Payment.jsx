@@ -59,9 +59,9 @@ const Payment = () => {
       console.log("here is the form habdl mpesa",orderId)
       
   
-      if (response.success) {
+      if (response.data.success) {
         const checkPayment = async (attempts = 0) => {
-          if (attempts >= 10) { 
+          if (attempts >= 30) { 
             setMpesaStage('failed');
             return;
           }
@@ -72,7 +72,8 @@ const Payment = () => {
             console.log("here",data);
             
             
-            if (data?.order?.is_paid) {
+            if (data.order?.is_paid) {
+              
               setMpesaStage('success');
               const user = userData;
               setCartItems({});
