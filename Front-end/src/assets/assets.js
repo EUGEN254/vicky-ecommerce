@@ -1,5 +1,4 @@
 import logo from './logo.png'
-import hero_img from './hero_img.png'
 import background from './background.png'
 import cart_icon from './cart_icon.png'
 import bin_icon from './bin_icon.png'
