@@ -5,6 +5,7 @@ import './Navbar.css';
 import { AppContent } from "../context/AppContext";
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import { FaSearch } from "react-icons/fa"
 
 const Navbar = ({ setShowLogin }) => {
     const { 
@@ -134,12 +135,10 @@ const Navbar = ({ setShowLogin }) => {
                         </button>
                     </form>
                 ) : (
-                    <img
-                        src={assets.search_icon}
-                        alt="search"
-                        className="h-7 mr-2 cursor-pointer transition-all duration-500 hover:opacity-80"
-                        onClick={() => setIsSearchOpen(true)}
-                    />
+                    <div onClick={() => setIsSearchOpen(true)}
+                    style={{ display: 'flex', alignItems: 'center', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '5px' }}>
+                    <FaSearch style={{ color: '#888', cursor: 'pointer' }} />
+                  </div>
                 )}
 
                 {/* User profile / Login button */}

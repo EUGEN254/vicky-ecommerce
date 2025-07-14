@@ -6,7 +6,6 @@ import menu_icon from './menu_icon.png'
 import basket_icon from './basket_icon.png'
 import closeIcon from './closeIcon.svg'
 import arrowIcon from './arrowIcon.svg'
-import locationIcon from './locationIcon.svg'
 import linkendinIcon from './linkendinIcon.svg'
 import instagramIcon from './instagramIcon.svg'
 import facebookIcon from './facebookIcon.svg'
@@ -19,22 +18,14 @@ export const assets = {
     logo,
     uploadArea,
     dashboardIcon,
-    listIcon,
     totalRevenue,
-    freeBreakfastIcon,
-    roomServiceIcon,
-    mountainIcon,
-    poolIcon,
     vanbackground,
-    locationIcon,
     arrowIcon,
     instagramIcon,
     twitterIcon,
     facebookIcon,
     linkendinIcon,
-    dropdown_icon,
     profile_icon,
-    bin_icon,
     menu_icon,
     basket_icon,
     closeIcon,
