@@ -1,10 +1,8 @@
 import logo from './logo.png'
-import cart_icon from './cart_icon.png'
 import profile_icon from './profile_icon.png'
 import uploadArea from './uploadArea.svg'
 import totalRevenue from './totalRevenueIcon.svg'
 import menu_icon from './menu_icon.png'
-import cross_icon from './cross_icon.png'
 import basket_icon from './basket_icon.png'
 import closeIcon from './closeIcon.svg'
 import arrowIcon from './arrowIcon.svg'
@@ -15,7 +13,6 @@ import facebookIcon from './facebookIcon.svg'
 import twitterIcon from './twitterIcon.svg'
 import vanbackground from './vanbackground.png'
 import dashboardIcon from "./dashboardIcon.svg";
-import addIcon from "./addIcon.svg";
  
 
 export const assets = {
@@ -32,7 +29,6 @@ export const assets = {
     locationIcon,
     arrowIcon,
     instagramIcon,
-    cart_icon,
     twitterIcon,
     facebookIcon,
     linkendinIcon,
