@@ -153,16 +153,12 @@ export const AppContextProvider = (props) => {
   };
 
   const fetchProducts = async () => {
-    try {
       const { data } = await axios.get(backendUrl + '/api/products');
       if (data.success) setProductsData(data.data);
-    } catch {
-      toast.error("Failed to fetch products");
-    }
   };
 
   const fetchExclusive = async () => {
-    try {
+   
       const { data } = await axios.get(backendUrl + '/api/products/exclusive_offers');
       if (data.success) {
         const offers = data.data.map(offer => ({
@@ -178,41 +174,30 @@ export const AppContextProvider = (props) => {
         }));
         setExclusiveOffers(offers);
       }
-    } catch (err) {
-      toast.error("Failed to fetch offers");
-    }
   };
 
   const fetchUserOrders = async () => {
     if (!userData?.id) return;
-    try {
       const { data } = await axios.get(`${backendUrl}/api/orders?userId=${userData.id}`);
       if (data.success) {
         setUserOrders(data.data);
       }
-    } catch (error) {
-      console.error("Failed to fetch user orders:", error);
-    }
+  
   };
 
   const fetchDashBoard = async () => {
-    try {
+  
       const { data } = await axios.get(backendUrl + '/api/dashboard');
       if (data.success) setDashBoardData(data.data);
-    } catch (err) {
-      toast.error("Failed to fetch dashboard");
-    }
+    
   };
 
   const getTestimonials = async () => {
-    try {
+    
       const { data } = await axios.get(`${backendUrl}/api/user/testimonials`);
       if (data.success) {
         setTestimonials(data.data);
       }
-    } catch (err) {
-      toast.error("Failed to fetch testimonials");
-    }
   };
 
   // ---- useEffects ----
