@@ -8,7 +8,7 @@ const Footer = ({ setShowChatbot, setShowAccessibility }) => {
         <div className="flex flex-wrap justify-between gap-12 md:gap-6">
             <div className="max-w-80">
                 <Link to='/' className=' h-8 md:h-9 p-2 font-bold text-black' >SHOE HUB</Link>
-                <p className='text-sm mt-5'>Gracie Shoe Hub is your ultimate destination for stylish and comfortable shoes. 
+                <p className='text-sm mt-5'>Vicky's Shoe Hub is your ultimate destination for stylish and comfortable shoes. 
                     We provide the latest trends and timeless classics with a user-friendly shopping experience and outstanding customer support.
 
                 </p>
