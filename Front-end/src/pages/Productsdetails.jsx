@@ -1,12 +1,8 @@
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { productBenefits } from '../assets/assets';
-import StarRating from '../components/StarRating';
 import { AppContent } from '../context/AppContext';
-import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
-import axios from 'axios'
-
 import {
   FaTruck, FaShieldAlt, FaExchangeAlt, FaHeadset, FaStore,
   FaLeaf, FaTint, FaWind, FaWeight, FaGripLines, FaSnowflake,
@@ -19,30 +15,31 @@ const ProductDetails = () => {
   const [mainImage, setMainImage] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState('');
   const [isAvailable, setIsAvailable] = useState(true);
   const [showAddAlert, setShowAddAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
 
-  const { productsData, addToCart, exclusiveOffers} = useContext(AppContent);
+  const { productsData, addToCart, exclusiveOffers } = useContext(AppContent);
 
-  
   useEffect(() => {
     const allProducts = [...productsData, ...exclusiveOffers];
     const found = allProducts.find(p => String(p.id) === id);
-    console.log("here",allProducts);
-    
-
     if (found) {
       setProduct(found);
-      setMainImage(found.image?.[0] || '');
+
+      const imageArray = found.images || found.image;
+      const resolvedImages = Array.isArray(imageArray) ? imageArray : [imageArray];
+      setMainImage(resolvedImages[0]);
+
       setIsAvailable(found.is_available ?? true);
     }
   }, [productsData, exclusiveOffers, id]);
 
   if (!product) return <p>Loading...</p>;
-  
-  
+
+  const imageArray = product.images || product.image;
+  const resolvedImages = Array.isArray(imageArray) ? imageArray : [imageArray];
 
   const benefitIcons = {
     'Premium Quality': <FaShieldAlt className="text-orange-500 text-xl" />,
@@ -64,11 +61,20 @@ const ProductDetails = () => {
     'Sports': <FaBasketballBall className="w-4 h-4" />
   };
 
-  
-  
+  const renderStars = (rating) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    return (
+      <>
+        {'★'.repeat(fullStars)}
+        {hasHalfStar && '½'}
+        {'☆'.repeat(emptyStars)}
+      </>
+    );
+  };
 
-
-  return product && (
+  return (
     <div className='pt-28 md:py-35 px-4 md:px-16 lg:px-24 xl:px-32'>
       <div className='flex flex-col md:flex-row items-start md:items-center gap-2'>
         <h1 className="text-2xl font-bold">{product.name} <span className='font-inter text-sm'>({product.type || 'Premium'})</span></h1>
@@ -80,7 +86,9 @@ const ProductDetails = () => {
       </div>
 
       <div className='flex items-center gap-1 mt-2'>
-        <StarRating rating={product.rating || 4.5} />
+        <div className="text-yellow-500 text-lg">
+          {renderStars(product.rating || 4.5)}
+        </div>
         <p className='ml-2'>{product.review_count || '200+'} reviews</p>
       </div>
 
@@ -89,14 +97,14 @@ const ProductDetails = () => {
           <img src={mainImage} alt="product" className='w-full rounded-xl shadow-lg object-cover' />
         </div>
         <div className='grid grid-cols-2 gap-4 lg:w-1/2 w-full'>
-        {(product.images || product.image || []).map((image, index) => (
-          <img
-            key={index}
-            onClick={() => setMainImage(image)}
-            src={image}
-            alt="product"
-            className={`w-full rounded-xl shadow-md object-cover cursor-pointer ${mainImage === image ? 'ring-2 ring-orange-500' : ''}`}
-          />
+          {resolvedImages.map((image, index) => (
+            <img
+              key={index}
+              onClick={() => setMainImage(image)}
+              src={image}
+              alt="product"
+              className={`w-full rounded-xl shadow-md object-cover cursor-pointer ${mainImage === image ? 'ring-2 ring-orange-500' : ''}`}
+            />
           ))}
         </div>
       </div>
@@ -117,7 +125,9 @@ const ProductDetails = () => {
           {product.discount_value ? (
             <>
               <span className="line-through text-gray-400 mr-2">KES {product.price}</span>
-              <span className="text-orange-500">KES {(product.price * (1 - product.discount_value / 100)).toFixed(2)}</span>
+              <span className="text-orange-500">
+                KES {(product.price * (1 - product.discount_value / 100)).toFixed(2)}
+              </span>
             </>
           ) : (
             `KES ${product.price}`
@@ -165,12 +175,18 @@ const ProductDetails = () => {
               type="number"
               id="quantity"
               value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Math.min(10, e.target.value)))}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || (Number(value) >= 1 && Number(value) <= 10)) {
+                  setQuantity(value);
+                }
+              }}
               min="1"
               max="10"
               required
               className='max-w-20 rounded border border-gray-300 px-3 py-2 mt-1.5 outline-none'
             />
+
           </div>
         </div>
 
@@ -204,7 +220,6 @@ const ProductDetails = () => {
         </button>
       </form>
 
-      {/* Benefits */}
       <div className='mt-12 space-y-4'>
         {productBenefits.map((benefit, index) => (
           <div key={index} className='flex items-start gap-4'>
@@ -219,7 +234,6 @@ const ProductDetails = () => {
         ))}
       </div>
 
-      {/* Description */}
       {product.description && (
         <div className='max-w-3xl border-y border-gray-300 my-12 py-10 text-gray-500'>
           <h3 className='text-xl font-bold mb-4 text-gray-800'>Product Details</h3>
@@ -227,7 +241,6 @@ const ProductDetails = () => {
         </div>
       )}
 
-      {/* Brand Info */}
       <div className='flex flex-col items-start gap-4 bg-gray-50 p-6 rounded-lg mt-12'>
         <div className='flex gap-4 items-center'>
           <div className='bg-orange-100 p-3 rounded-full'>
@@ -235,10 +248,10 @@ const ProductDetails = () => {
           </div>
           <div>
             <p className='text-lg md:text-xl font-semibold'>
-              {product.category?.name || product.owner?.name || 'Our Store'}
+              {product.category_name || product.owner_name || 'Our Store'}
             </p>
             <div className='flex items-center mt-1'>
-              <StarRating rating={4.5} />
+              {renderStars(4.5)}
               <p className='ml-2'>200+ products</p>
             </div>
           </div>
@@ -250,6 +263,5 @@ const ProductDetails = () => {
     </div>
   );
 };
-
 
 export default ProductDetails;

@@ -6,6 +6,7 @@ import { AppContent } from '../context/AppContext'
 
 const Collection = () => {
     const { productsData } = useContext(AppContent)
+    console.log(productsData)
 
     return (
         <div className='flex flex-col items-center px-6 sm:px-10 md:px-18 lg:px-28 bg-slate-50 py-12 md:py-20'>

@@ -1,20 +1,11 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react'
 import { assets } from '../assets/assets'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import StarRating from '../components/StarRating'
 import { AppContent } from '../context/AppContext'
 import axios from 'axios'
-import { 
-  FaLeaf,         // Eco-Friendly
-  FaTint,          // Waterproof
-  FaWind,          // Breathable
-  FaWeight,        // Lightweight
-  FaGripLines,     // Slip Resistant
-  FaSnowflake,     // Cold Resistant
-  FaFire,          // Heat Resistant
-  FaRunning,       // Running
-  FaWalking,       // Walking
-  FaBasketballBall // Sports
+import {
+  FaLeaf, FaTint, FaWind, FaWeight, FaGripLines,
+  FaSnowflake, FaFire, FaRunning, FaWalking, FaBasketballBall
 } from 'react-icons/fa'
 
 const CheckBox = ({ label, selected = false, onChange = () => {} }) => (
@@ -45,6 +36,18 @@ const featureIcons = {
   'Sports': <FaBasketballBall className="w-4 h-4" />
 }
 
+// ⭐ Custom Star Renderer
+const StarDisplay = ({ stars = 4 }) => {
+  const total = 5
+  return (
+    <div className="flex text-yellow-400">
+      {[...Array(total)].map((_, i) => (
+        <span key={i} className='text-lg'>{i < stars ? '★' : '☆'}</span>
+      ))}
+    </div>
+  )
+}
+
 const Allcollection = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const { productsData, fetchProducts, backendUrl } = useContext(AppContent)
@@ -61,18 +64,9 @@ const Allcollection = () => {
 
   const gender = [...new Set(categories.map(p => p.name).filter(Boolean))]
 
-  const priceRange = [
-    '0 to 500',
-    '500 to 1000',
-    '1000 to 2000',
-    '2000 to 3000'
-  ]
+  const priceRange = ['0 to 500', '500 to 1000', '1000 to 2000', '2000 to 3000']
 
-  const sortOptions = [
-    'price Low to High',
-    'price High to Low',
-    'Newest First'
-  ]
+  const sortOptions = ['price Low to High', 'price High to Low', 'Newest First']
 
   const handleFilterChange = (checked, value, type) => {
     setSelectedFilters(prevFilters => {
@@ -119,18 +113,12 @@ const Allcollection = () => {
   }, [productsData, selectedFilters, selectedSort, searchParams])
 
   const clearFilters = () => {
-    setSelectedFilters({
-      gender: [],
-      priceRange: []
-    })
+    setSelectedFilters({ gender: [], priceRange: [] })
     setSelectedSort('')
     setSearchParams({})
   }
 
-  useEffect(() => {
-    fetchProducts()
-  }, [])
-
+  useEffect(() => { fetchProducts() }, [])
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -157,27 +145,30 @@ const Allcollection = () => {
         {filteredProducts.map((product) => (
           <div key={product.id} className='flex flex-col md:flex-row items-start py-10 gap-6 border-b border-gray-300 last:pb-30 last:border-0 ml-2 md:ml-4'>
             <img
-              onClick={() => { navigate(`/products/${product.id}`); }}
-              src={product.images?.[0] || assets.defaultShoeImage}
-              alt="shoe-img"
-              title='View Product Details'
+              onClick={() => navigate(`/products/${product.id}`)}
+              src={product.images?.[0]?.trim() || assets.defaultShoeImage}
+              onError={(e) => { e.target.src = assets.defaultShoeImage }}
+              alt={product.name}
+              title="View Product Details"
               className='max-h-65 md:w-1/2 rounded-xl shadow-lg object-cover cursor-pointer'
             />
             <div className='md:w-1/2 flex flex-col gap-2'>
-              <p
-                onClick={() => { navigate(`/products/${product.id}`); }}
-                className='text-gray-800 text-3xl font-playfair cursor-pointer'
-              >
+              <p onClick={() => navigate(`/products/${product.id}`)} className='text-gray-800 text-3xl font-playfair cursor-pointer'>
                 {product.name}
               </p>
+
+              {/* ✅ Custom Star Rating */}
               <div className='flex items-center'>
-                <StarRating />
-                <p className='ml-2'>200+ reviews</p>
+                <StarDisplay stars={4} />
+                <p className='ml-2 text-sm text-gray-600'>200+ reviews</p>
               </div>
+
               <p className='text-gray-500'>Category: {product.category_name || 'Uncategorized'}</p>
+
               <div className='flex items-center gap-1 text-gray-500 mt-2 text-sm'>
                 <span>colors: {Array.isArray(product.colors) ? product.colors.join(', ') : 'N/A'}</span>
               </div>
+
               <div className='flex flex-wrap items-center mt-3 mb-6 gap-4'>
                 {(product.features || []).map((feature, index) => (
                   <div key={index} className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70'>
@@ -186,22 +177,21 @@ const Allcollection = () => {
                   </div>
                 ))}
               </div>
+
               <p className="text-xl font-medium text-gray-700">
-                  {product.discount_active
-                    ? (
-                      <>
-                        <span className="line-through text-red-400 mr-2">Kshs {product.price}</span>
-                        <span className="text-green-700 font-semibold">
-                          Kshs {product.price - (product.price * product.discount_value / 100)}
-                        </span>
-                        <br />
-                        <span className="text-sm text-green-500">
-                          ({product.discount_name} - {product.discount_value}% off)
-                        </span>
-                      </>
-                    )
-                    : `Kshs ${product.price}`}
-                </p>
+                {product.discount_active
+                  ? (
+                    <>
+                      <span className="line-through text-red-400 mr-2">Kshs {product.price}</span>
+                      <span className="text-green-700 font-semibold">
+                        Kshs {product.price - (product.price * product.discount_value / 100)}
+                      </span><br />
+                      <span className="text-sm text-green-500">
+                        ({product.discount_name} - {product.discount_value}% off)
+                      </span>
+                    </>
+                  ) : `Kshs ${product.price}`}
+              </p>
             </div>
           </div>
         ))}

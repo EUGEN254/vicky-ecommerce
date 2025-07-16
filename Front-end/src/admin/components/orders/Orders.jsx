@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -12,62 +13,63 @@ const Orders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const {backendUrl}  = useContext(AppContent)
+  const [confirmDeleteOrderId, setConfirmDeleteOrderId] = useState(null);
+  const { backendUrl } = useContext(AppContent);
 
-  // Fetch orders from API
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         const response = await axios.get(backendUrl + '/api/orders/orders');
-        console.log(response)
         setOrders(Array.isArray(response.data) ? response.data : []);
-        setLoading(false);
       } catch (error) {
         toast.error('Failed to fetch orders');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchOrders();
-  }, []);
+  }, [backendUrl]);
 
-  // Filter orders based on search and status
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
+    const matchesSearch =
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (order.shipping_address && 
-       JSON.stringify(order.shipping_address).toLowerCase().includes(searchTerm.toLowerCase()));
-    
+      (order.shipping_address &&
+        JSON.stringify(order.shipping_address).toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    
     return matchesSearch && matchesStatus;
   });
 
-  // Handle order deletion
-  const handleDelete = async (orderId) => {
-    if (!window.confirm('Are you sure you want to delete this order?')) return;
-    
+  const requestDelete = (orderId) => {
+    setConfirmDeleteOrderId(orderId);
+  };
+
+  const confirmDelete = async () => {
     try {
-      await axios.delete(`${backendUrl}/api/orders/orders/${orderId}`);
-      setOrders(orders.filter(order => order.id !== orderId));
+      await axios.delete(`${backendUrl}/api/orders/orders/${confirmDeleteOrderId}`);
+      setOrders(orders.filter(order => order.id !== confirmDeleteOrderId));
       toast.success('Order deleted successfully');
     } catch (error) {
       toast.error('Failed to delete order');
+    } finally {
+      setConfirmDeleteOrderId(null);
     }
   };
 
-  // View order details
+  const cancelDelete = () => {
+    setConfirmDeleteOrderId(null);
+  };
+
   const viewOrderDetails = (order) => {
     setSelectedOrder(order);
     setIsModalOpen(true);
   };
 
-  // Update order status
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       await axios.put(`${backendUrl}/api/orders/orders/${orderId}/status`, { status: newStatus });
-      setOrders(orders.map(order => 
+      setOrders(orders.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
       ));
       toast.success('Order status updated');
@@ -87,7 +89,7 @@ const Orders = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Order Management</h1>
-      
+
       {/* Filters and Search */}
       <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
         <div className="relative flex-grow max-w-md">
@@ -102,7 +104,7 @@ const Orders = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
+
         <div className="flex items-center gap-2">
           <FaFilter className="text-gray-500" />
           <select
@@ -122,23 +124,22 @@ const Orders = () => {
 
       {/* Orders Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <h2>Order List</h2>
-          {
-          filteredOrders.length > 0 ? (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              { 
-                filteredOrders.map((order) => (
+        <h2 className="px-6 py-4 text-lg font-semibold">Order List</h2>
+        {filteredOrders.length > 0 ? (
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredOrders.map((order) => (
                   <tr key={order.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       #{order.id.substring(0, 8)}...
@@ -180,7 +181,7 @@ const Orders = () => {
                         <FaEye />
                       </button>
                       <button
-                        onClick={() => handleDelete(order.id)}
+                        onClick={() => requestDelete(order.id)}
                         className="text-red-600 hover:text-red-900"
                         title="Delete Order"
                       >
@@ -189,20 +190,39 @@ const Orders = () => {
                     </td>
                   </tr>
                 ))}
-            </tbody>
+              </tbody>
             </table>
-              ) : (
-                
-                  <p className="px-6 py-4 text-center text-sm text-gray-500">
-                    No orders found
-                  </p>
-              )
-          }
+          </div>
+        ) : (
+          <p className="px-6 py-4 text-center text-sm text-gray-500">No orders found</p>
+        )}
       </div>
-      
 
-      {/* Order Details Modal */}
-      {isModalOpen && selectedOrder && (
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteOrderId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full p-6">
+            <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
+            <p className="mb-6">Are you sure you want to delete this order?</p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+ {/* Order Details Modal */}
+ {isModalOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b">
