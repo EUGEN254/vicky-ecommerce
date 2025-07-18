@@ -125,10 +125,12 @@ const Navbar = ({ setShowLogin }) => {
 
         {/* Desktop Right */}
         <div className="hidden md:flex items-center gap-4">
-          <Link to='/cart' className="relative">
-            <img src={assets.basket_icon} alt="basket" className="h-7 mr-2" />
-            <div className="nav-cart-count">{getTotalCartItems()}</div>
-          </Link>
+        <Link to='/cart' className="relative">
+          <img src={assets.basket_icon} alt="basket" className="h-7 mr-2" />
+          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+            {getTotalCartItems()}
+          </div>
+        </Link>
 
           {isSearchOpen ? (
            <form onSubmit={handleSearchSubmit} className="flex items-center border rounded overflow-hidden">
@@ -211,10 +213,12 @@ const Navbar = ({ setShowLogin }) => {
 
         {/* Mobile Right Section */}
         <div className="flex items-center gap-3 md:hidden">
-          <Link to="/cart" className="relative">
-            <img src={assets.basket_icon} alt="basket" className="h-6" />
-            <div className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{getTotalCartItems()}</div>
-          </Link>
+        <Link to='/cart' className="relative">
+    <img src={assets.basket_icon} alt="basket" className="h-7 mr-2" />
+    <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+      {getTotalCartItems()}
+    </div>
+  </Link>
 
           {/* Mobile user icon */}
           {userData ? (

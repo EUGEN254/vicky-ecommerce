@@ -34,6 +34,7 @@ export const AppContextProvider = (props) => {
         if (userData?.id) {
           localStorage.removeItem(`cart_${userData.id}`);
         }
+        localStorage.removeItem('guestCart');
         setUserData(null);
         setIsLoggedin(false);
         setIsOwner(false);
@@ -101,22 +102,48 @@ export const AppContextProvider = (props) => {
   };
   
 
-  const removeFromCart = (itemId) => {
-    setCartItems(prev => {
-      const existing = prev[itemId];
-      if (!existing || existing.quantity <= 1) {
-        const updatedCart = { ...prev };
-        delete updatedCart[itemId];
-        return updatedCart;
-      }
-      return {
-        ...prev,
-        [itemId]: {
-          ...existing,
-          quantity: existing.quantity - 1
+  const removeFromCart = (itemId, quantity = null) => {
+    if (userData?.id) {
+      // For logged-in users
+      setCartItems(prev => {
+        const existing = prev[itemId];
+        if (!existing || (quantity && existing.quantity <= quantity)) {
+          const updatedCart = { ...prev };
+          delete updatedCart[itemId];
+          localStorage.setItem(`cart_${userData.id}`, JSON.stringify(updatedCart));
+          return updatedCart;
         }
-      };
-    });
+        const updatedCart = {
+          ...prev,
+          [itemId]: {
+            ...existing,
+            quantity: existing.quantity - (quantity || existing.quantity)
+          }
+        };
+        localStorage.setItem(`cart_${userData.id}`, JSON.stringify(updatedCart));
+        return updatedCart;
+      });
+    } else {
+      // For guest users
+      setGuestCart(prev => {
+        const existing = prev[itemId];
+        if (!existing || (quantity && existing.quantity <= quantity)) {
+          const updatedCart = { ...prev };
+          delete updatedCart[itemId];
+          localStorage.setItem('guestCart', JSON.stringify(updatedCart));
+          return updatedCart;
+        }
+        const updatedCart = {
+          ...prev,
+          [itemId]: {
+            ...existing,
+            quantity: existing.quantity - (quantity || existing.quantity)
+          }
+        };
+        localStorage.setItem('guestCart', JSON.stringify(updatedCart));
+        return updatedCart;
+      });
+    }
   };
 
  // Update getTotalCartAmount to include guest cart
@@ -335,20 +362,45 @@ useEffect(() => {
   fetchDashBoard();
   getTestimonials();
 }, []);
+useEffect(() => {
+  const validateCart = (cart) => {
+    if (!cart || typeof cart !== 'object') return {};
+    const validCart = {};
+    
+    Object.entries(cart).forEach(([id, item]) => {
+      if (item && typeof item === 'object' && 
+          Number.isInteger(item.quantity)) {
+        validCart[id] = item;
+      }
+    });
+    
+    return validCart;
+  };
 
-  useEffect(() => {
-    if (userData?.id) {
-      fetchUserOrders();
-      const savedCart = localStorage.getItem(`cart_${userData.id}`);
-      if (savedCart) {
-        try {
-          setCartItems(JSON.parse(savedCart));
-        } catch (e) {
-          console.error("Failed to parse saved cart:", e);
-        }
+  // Load guest cart
+  const savedGuestCart = localStorage.getItem('guestCart');
+  if (savedGuestCart) {
+    try {
+      setGuestCart(validateCart(JSON.parse(savedGuestCart)));
+    } catch (e) {
+      console.error("Failed to parse guest cart:", e);
+      localStorage.removeItem('guestCart');
+    }
+  }
+
+  // Load user cart if logged in
+  if (userData?.id) {
+    const savedCart = localStorage.getItem(`cart_${userData.id}`);
+    if (savedCart) {
+      try {
+        setCartItems(validateCart(JSON.parse(savedCart)));
+      } catch (e) {
+        console.error("Failed to parse user cart:", e);
+        localStorage.removeItem(`cart_${userData.id}`);
       }
     }
-  }, [userData]);
+  }
+}, [userData?.id]);
 
   useEffect(() => {
     if (userData?.id) {

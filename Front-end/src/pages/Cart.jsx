@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
 import { AppContent } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom'
+import Swal from 'sweetalert2';
 
 const Cart = () => {
   const { 
@@ -70,10 +71,36 @@ const Cart = () => {
                   </div>
                   <p>KES {item.price * cartItem.quantity}</p>
                   <p 
-                    onClick={() => removeFromCart(item.id)} 
-                    className="text-red-500 cursor-pointer font-bold"
+                    onClick={async () => {
+                      const result = await Swal.fire({
+                        title: 'Remove this item?',
+                        text: "You won't be able to revert this!",
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, remove it!',
+                        cancelButtonText: 'Cancel',
+                        backdrop: `
+                          rgba(0,0,0,0.4)
+                          url("/images/nyan-cat.gif")
+                          left top
+                          no-repeat
+                        `
+                      });
+
+                      if (result.isConfirmed) {
+                        removeFromCart(item.id);
+                        Swal.fire(
+                          'Removed!',
+                          'Your item has been removed.',
+                          'success'
+                        );
+                      }
+                    }}
+                    className="text-red-500 cursor-pointer font-bold hover:text-red-700 transition-colors"
                   >
-                    x
+                    ×
                   </p>
                 </div>
                 <hr className="border-t border-gray-200" />
