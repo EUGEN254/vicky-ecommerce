@@ -6,7 +6,7 @@ const ChatBotWidget = ({ show, onClose, onToggle }) => {
   const [messages, setMessages] = useState([
     { 
       from: 'bot',
-      text: "👋 Hi! I'm Eugen'sBot. How can I help you?"
+      text: "👋 Hi! I'm Vick's Bot. How can I help you?"
     }
   ]);
 

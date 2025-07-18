@@ -26,8 +26,8 @@ export const register = async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      secure: true, // required for cross-site with SameSite=None
+      sameSite: 'None',
       maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
@@ -45,7 +45,6 @@ export const register = async (req, res) => {
   }
 }
 
-// 🟢 Login
 export const login = async (req, res) => {
   const { email, password } = req.body
 
@@ -64,8 +63,8 @@ export const login = async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
+      secure: true, // required for cross-site with SameSite=None
+      sameSite: 'None',
       maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
@@ -81,8 +80,9 @@ export const logout = async (req, res) => {
   try {
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      secure: true, // required for cross-site with SameSite=None
+      sameSite: 'None',
+      maxAge: 7 * 24 * 60 * 60 * 1000
     })
     return res.json({ success: true, message: 'Successfully Logged Out' })
   } catch (error) {

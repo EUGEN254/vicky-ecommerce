@@ -44,3 +44,10 @@ export const getUserInformation = async (req, res) => {
   }
 };
 
+export const testimonials = async (req, res) => {
+
+  const [rows] = await pool.query('SELECT * FROM testimonials');
+  
+  res.json({ success: true, data: rows });
+};
+

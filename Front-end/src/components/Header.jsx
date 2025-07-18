@@ -1,18 +1,27 @@
 import React from 'react'
 import { assets } from '../assets/assets'
 import { Link } from "react-router-dom";
+import { motion } from 'framer-motion';
+
 
 const Header = () => {
   return (
     <div className='flex flex-col justify-center px-6 md:px-16 lg:px-24 xl:px-32 text-white bg-gray-300 min-h-screen rounded-bl-[4rem] rounded-br-[4rem]'>
       <div className='flex flex-col lg:flex-row gap-6 lg:gap-8 items-center mt-12'>
         {/* Text Content */}
+         
         <div className='flex flex-col w-full lg:w-1/2 pl-4 sm:pl-0'>
+        <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7 }}
+                className="bg-gray-300  rounded-2xl p-10 max-w-3xl w-full"
+              >
           <h2 className='mb-3 text-2xl sm:text-3xl md:text-3xl text-black font-bold ml-2 sm:ml-0'>
             MINIMALISTIC SHOE
           </h2>
           <p className='w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl mb-5 text-black text-sm md:text-base mt-3 sm:mt-0 ml-2 sm:ml-0'>
-            Maintain the same look and feel. Have better look feel fanatastic when you step anywhere you go why wait Press the Button Below
+            Maintain the same look and feel. Have better look feel fantastic when you step anywhere you go why wait Press the Button Below
             for amazing deals
           </p>
          <Link to='/Allcollection'>
@@ -20,6 +29,7 @@ const Header = () => {
               SHOP NOW
             </button>
          </Link> 
+         </motion.div>
         </div>
 
         {/* Image */}
@@ -30,6 +40,7 @@ const Header = () => {
             alt="Minimalistic shoe showcase" 
           />
         </div>
+       
       </div>
     </div>
   )

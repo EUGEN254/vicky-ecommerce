@@ -1,8 +1,51 @@
 import React ,{useContext, useState} from 'react'
 import { assets } from '../assets/assets'
 import { Link} from 'react-router-dom'
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { AppContent } from '../context/AppContext';
 
 const Footer = ({ setShowChatbot, setShowAccessibility }) => {
+    const [email, setEmail] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { backendUrl } = useContext(AppContent);
+  
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      
+      if (!email) {
+        toast.error('Please enter your email address');
+        return;
+      }
+  
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
+  
+      setIsSubmitting(true);
+  
+      try {
+        const response = await axios.post(`${backendUrl}/api/messages/subscribe`, {
+          email: email,
+          source: 'website-footer'
+        });
+  
+        if (response.data.success) {
+          toast.success('Thank you for subscribing! You will now receive our latest offers.');
+          setEmail('');
+        } else {
+          toast.error(response.data.message || 'Subscription failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Subscription error:', error);
+        toast.error(error.response?.data?.message || 'Failed to subscribe. Please try again later.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+
   return (
     <div className=' bg-[#F6F9FC] text-gray-500/80 pt-8 px-6 md:px-16 lg:px-24 xl:px-32 '>
         <div className="flex flex-wrap justify-between gap-12 md:gap-6">
@@ -38,17 +81,35 @@ const Footer = ({ setShowChatbot, setShowAccessibility }) => {
                 <p className='mt-3 text-sm'>
                     subscribe to our newsletter for insipiration offers
                 </p>
-                <div className="flex items-center mt-4">
-                    <input type="text" className='bg-white rounded-1 border border-gray-300 h-9 px-3 outline-none' placeholder='Your email' />
-                    <button className='flex items-center justify-center bg-black h-9 w-9 aspect-square rounded-r'>
-                        <img src={assets.arrowIcon} alt="arrowIcon"className='w-3.5 invert'/>
+                <form onSubmit={handleSubmit} className="flex items-center mt-4">
+                    <input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className='bg-white rounded-l border border-gray-300 h-9 px-3 outline-none flex-grow' 
+                    placeholder='Your email' 
+                    disabled={isSubmitting}
+                    />
+                    <button 
+                    type="submit" 
+                    className='flex items-center justify-center bg-black h-9 w-9 aspect-square rounded-r'
+                    disabled={isSubmitting}
+                    >
+                    {isSubmitting ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                        <img src={assets.arrowIcon} alt="Subscribe" className='w-3.5 invert'/>
+                    )}
                     </button>
-                </div>
+                </form>
+                <p className="mt-2 text-xs text-gray-500">
+                    We respect your privacy. Unsubscribe at any time.
+                </p>
             </div>
         </div>
         <hr className='border-gray-300 mt-8 cursor-pointer'/>
         <div className="flex flex-col md:flex-row gap-2 items-center justify-between py-5">
-            <p>@ {new Date().getFullYear()} GracieShoe HUB.All rights reserved</p>
+            <p>@ {new Date().getFullYear()} Vicky's Shoe HUB.All rights reserved</p>
             <ul className='flex items-center gap-4'>
                 <Link to='/safety-information'>Privacy</Link>
                 <Link to='/terms-conditions'>Terms & conditions</Link>

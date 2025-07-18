@@ -36,6 +36,8 @@ import Layout from './admin/pages/Admin/Layout'
 import AccessibilityWidget from './components/AccessibilityWidget'
 import ChatBotWidget from './components/ChatBotWidget'
 import ExclusiveOffer from './admin/components/exclusiveoffer/ExclusiveOffer'
+import ExclusiveOffersPage from './pages/ExclusiveOffersPage'
+import TermsConditions from './pages/TermsConditions'
 
 function App() {
   const location = useLocation()
@@ -100,6 +102,17 @@ function App() {
       </div>
     );
   }
+
+
+  const ScrollToTop = () => {
+    const { pathname } = useLocation();
+  
+    useEffect(() => {
+      window.scrollTo(0, 0);
+    }, [pathname]);
+  
+    return null;
+  };
   
   
   return (
@@ -114,6 +127,7 @@ function App() {
       {showLogin && !hideGlobalComponents && <LoginSignup setShowLogin={setShowLogin} />}
 
       <div className="min-h-[70vh]">
+      <ScrollToTop />
         <Routes>
           
           {/* Frontend Pages */}
@@ -122,13 +136,15 @@ function App() {
           <Route path="/products/:id" element={<Productsdetails />} />
           <Route path="/My-orders" element={<Myorders />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/payment" element={<Payment />} />
+          <Route path="/payment" element={<Payment setShowLogin={setShowLogin} />} />
           <Route path='/email-verify' element={<EmailVerify/>}/>
           <Route path='/reset-password' element={<ResestPassword/>}/>
           <Route path="/about" element={<About />} />
           <Route path="/safety-information" element={<SafetyInformation />} />
           <Route path="/cancellation-options" element={<CancellationOptions />} />
           <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/offers" element={<ExclusiveOffersPage />} />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
 
           {/* Admin Login Page */}
           <Route path="/admin-login" element={<Login />} />

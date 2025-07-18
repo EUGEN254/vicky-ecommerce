@@ -1,9 +1,16 @@
 import React from 'react'
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const CancellationOptions = () => {
   return (
     <div className="max-w-xl mx-auto p-6 mt-30">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7 }}
+      className="bg-gray-300  rounded-2xl p-10 max-w-3xl w-full"
+      >
       <h1 className="text-2xl font-bold mb-4">Cancellation Options</h1>
       <p className="mb-4">We understand that plans change. Here are your cancellation options:</p>
       <ul className="list-disc list-inside space-y-2">
@@ -17,6 +24,8 @@ const CancellationOptions = () => {
          <Link to='/contact-us' className='hover:underline text-blue-500'>contact support.</Link>
          
          </p>
+
+         </motion.div>
     </div>
   )
 }

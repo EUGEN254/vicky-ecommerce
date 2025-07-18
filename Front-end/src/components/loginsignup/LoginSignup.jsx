@@ -62,10 +62,23 @@ const LoginSignup = ({ setShowLogin }) => {
                     toast.success(data.message || "Login successful!");
                     setIsLoggedin(true);
                     setShowLogin(false);
-                    getUserData()
-                    navigate('/');
-                    
-                } else {
+                    await getUserData();
+
+                     // Redirect to payment page if that's where they came from
+                    const redirectPath = localStorage.getItem('redirectAfterLogin') || '/';
+                    localStorage.removeItem('redirectAfterLogin');
+
+
+                     // Also restore form data if exists
+                    const savedFormData = localStorage.getItem('pendingOrder');
+                    if (savedFormData) {
+                      // You'll need to pass this to your payment component
+                      // Either via context or another method
+                    }
+
+                    navigate(redirectPath);
+                }
+                else {
                     toast.error(data.message || "Login failed");
                 }
             }

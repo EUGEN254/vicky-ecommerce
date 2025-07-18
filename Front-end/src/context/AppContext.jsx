@@ -20,10 +20,15 @@ export const AppContextProvider = (props) => {
   const [orderList, setOrderList] = useState([]);
   const [isOwner, setIsOwner] = useState(false);
   const [testimonials, setTestimonials] = useState([]);
+  const [guestCart, setGuestCart] = useState({});
 
   // Logout
   const logout = async () => {
     try {
+      // Save current cart before logging out
+      const currentCart = userData?.id ? cartItems : guestCart;
+      localStorage.setItem('pendingCart', JSON.stringify(currentCart));
+  
       const { data } = await axios.post(backendUrl + '/api/auth/logout');
       if (data.success) {
         if (userData?.id) {
@@ -44,40 +49,57 @@ export const AppContextProvider = (props) => {
 
   // Cart Management
   const addToCart = (itemId, size, color, quantity = 1) => {
-    const product = productsData.find((p) => p.id === itemId);
-    if (!product || !product.is_available) {
+    const allProducts = [...productsData, ...exclusiveOffers];
+    const product = allProducts.find((p) => String(p.id) === String(itemId));
+  
+    if (!product || product.is_available === false) {
       toast.error('Product is not available.');
       return;
     }
-
-    setCartItems(prev => {
-      const existing = prev[itemId];
-      if (existing && existing.size === size && existing.color === color) {
-        return {
+  
+    if (isLoggedin && userData?.id) {
+      // For logged-in users
+      setCartItems(prev => {
+        const existing = prev[itemId];
+        const newCart = {
           ...prev,
           [itemId]: {
-            ...existing,
-            quantity: existing.quantity + quantity
-          }
-        };
-      } else {
-        return {
-          ...prev,
-          [itemId]: {
-            quantity,
-            size,
-            color,
+            quantity: existing ? existing.quantity + quantity : quantity,
+            size: size || (existing?.size || ''),
+            color: color || (existing?.color || ''),
             productInfo: {
-              name: product.name,
+              name: product.name || product.title,
               price: product.price,
-              image: product.images?.[0] || ''
+              image: product.images?.[0] || product.image?.[0] || ''
             }
           }
         };
-      }
-    });
-
+        localStorage.setItem(`cart_${userData.id}`, JSON.stringify(newCart));
+        return newCart;
+      });
+    } else {
+      // For guest users
+      setGuestCart(prev => {
+        const existing = prev[itemId];
+        const newGuestCart = {
+          ...prev,
+          [itemId]: {
+            quantity: existing ? existing.quantity + quantity : quantity,
+            size: size || (existing?.size || ''),
+            color: color || (existing?.color || ''),
+            productInfo: {
+              name: product.name || product.title,
+              price: product.price,
+              image: product.images?.[0] || product.image?.[0] || ''
+            }
+          }
+        };
+        localStorage.setItem('guestCart', JSON.stringify(newGuestCart));
+        return newGuestCart;
+      });
+    }
   };
+  
 
   const removeFromCart = (itemId) => {
     setCartItems(prev => {
@@ -97,27 +119,34 @@ export const AppContextProvider = (props) => {
     });
   };
 
-  const getTotalCartAmount = () => {
-    let total = 0;
-    for (const itemId in cartItems) {
-      const entry = cartItems[itemId];
-      const product = productsData.find(p => p.id === itemId);
-      if (entry && product) {
-        total += product.price * entry.quantity;
-      }
-    }
-    return total;
-  };
+ // Update getTotalCartAmount to include guest cart
+const getTotalCartAmount = () => {
+  let total = 0;
+  const allProducts = [...productsData, ...exclusiveOffers];
+  const currentCart = userData?.id ? cartItems : guestCart;
 
-  const getTotalCartItems = () => {
-    return Object.values(cartItems).reduce((acc, item) => acc + (item?.quantity || 0), 0);
-  };
+  for (const itemId in currentCart) {
+    const entry = currentCart[itemId];
+    const product = allProducts.find(p => String(p.id) === String(itemId));
+    if (entry && product) {
+      total += product.price * entry.quantity;
+    }
+  }
+
+  return total;
+};
+
+  
+// Update getTotalCartItems similarly
+const getTotalCartItems = () => {
+  const currentCart = userData?.id ? cartItems : guestCart;
+  return Object.values(currentCart).reduce((acc, item) => acc + (item?.quantity || 0), 0);
+};
 
   const placeOrder = (newOrder) => {
     setOrderList(prev => [...prev, newOrder]);
   };
 
-  // Fetchers
   const getUserData = async () => {
     try {
       const { data } = await axios.get(backendUrl + '/api/user/data');
@@ -125,6 +154,29 @@ export const AppContextProvider = (props) => {
         setUserData(data.userData);
         setIsLoggedin(true);
         setIsOwner(data.userData.role === "hotelOwner" || data.userData.role === "admin");
+        
+        // Check for pending cart from previous session
+        const pendingCart = localStorage.getItem('pendingCart');
+        if (pendingCart) {
+          try {
+            const parsedCart = JSON.parse(pendingCart);
+            setCartItems(parsedCart);
+            localStorage.setItem(`cart_${data.userData.id}`, JSON.stringify(parsedCart));
+            localStorage.removeItem('pendingCart');
+          } catch (e) {
+            console.error("Failed to restore pending cart:", e);
+          }
+        } else {
+          // Load user's saved cart if no pending cart
+          const savedCart = localStorage.getItem(`cart_${data.userData.id}`);
+          if (savedCart) {
+            try {
+              setCartItems(JSON.parse(savedCart));
+            } catch (e) {
+              console.error("Failed to parse saved cart:", e);
+            }
+          }
+        }
       } else {
         setUserData(null);
         setIsLoggedin(false);
@@ -158,23 +210,85 @@ export const AppContextProvider = (props) => {
   };
 
   const fetchExclusive = async () => {
-   
+    try {
       const { data } = await axios.get(backendUrl + '/api/products/exclusive_offers');
+      console.log(data);
+      
       if (data.success) {
-        const offers = data.data.map(offer => ({
-          ...offer,
-          image: typeof offer.image === 'string' ? JSON.parse(offer.image) : offer.image,
-          name: offer.title,
-          discount_value: offer.price_off,
-          price: offer.original_price,
-          description: offer.description,
-          rating: 4.5,
-          review_count: '100+',
-          features: ['Premium Quality', 'Fast Shipping']
-        }));
+        const offers = data.data.map(offer => {
+          // Parse image/images
+          let images = [];
+          if (Array.isArray(offer.images)) {
+            images = offer.images;
+          } else if (typeof offer.image === 'string') {
+            try {
+              const parsed = JSON.parse(offer.image);
+              if (Array.isArray(parsed)) {
+                images = parsed;
+              } else {
+                images = [parsed];
+              }
+            } catch {
+              images = [offer.image]; // fallback to single image string
+            }
+          }
+  
+          // Parse sizes
+          let sizes = [];
+          if (typeof offer.sizes === 'string') {
+            try {
+              const parsed = JSON.parse(offer.sizes);
+              if (Array.isArray(parsed)) {
+                sizes = parsed.map(s => String(s).trim()).filter(s => s);
+              } else {
+                sizes = offer.sizes.split(',').map(s => s.trim()).filter(s => s);
+              }
+            } catch {
+              sizes = offer.sizes.split(',').map(s => s.trim()).filter(s => s);
+            }
+          } else if (Array.isArray(offer.sizes)) {
+            sizes = offer.sizes.map(s => String(s).trim()).filter(s => s);
+          }
+  
+          // Parse colors
+          let colors = [];
+          if (typeof offer.colors === 'string') {
+            try {
+              const parsed = JSON.parse(offer.colors);
+              if (Array.isArray(parsed)) {
+                colors = parsed.map(c => String(c).trim()).filter(c => c);
+              } else {
+                colors = offer.colors.split(',').map(c => c.trim()).filter(c => c);
+              }
+            } catch {
+              colors = offer.colors.split(',').map(c => c.trim()).filter(c => c);
+            }
+          } else if (Array.isArray(offer.colors)) {
+            colors = offer.colors.map(c => String(c).trim()).filter(c => c);
+          }
+  
+          return {
+            ...offer,
+            images, 
+            sizes,
+            colors,
+            name: offer.title,
+            discount_value: offer.price_off,
+            price: offer.original_price,
+            description: offer.description,
+            rating: 4.5,
+            review_count: '100+',
+            features: ['Premium Quality', 'Fast Shipping'],
+          };
+        });
+  
         setExclusiveOffers(offers);
       }
+    } catch (error) {
+      console.error("Failed to fetch exclusive offers:", error);
+    }
   };
+  
 
   const fetchUserOrders = async () => {
     if (!userData?.id) return;
@@ -201,14 +315,26 @@ export const AppContextProvider = (props) => {
   };
 
   // ---- useEffects ----
-  useEffect(() => {
-    getUserData();
-    getAdminData();
-    fetchProducts();
-    fetchExclusive();
-    fetchDashBoard();
-    getTestimonials();
-  }, []);
+ // Add this to your initial useEffect in AppContextProvider
+useEffect(() => {
+  // Load guest cart if exists
+  const savedGuestCart = localStorage.getItem('guestCart');
+  if (savedGuestCart) {
+    try {
+      setGuestCart(JSON.parse(savedGuestCart));
+    } catch (e) {
+      console.error("Failed to parse guest cart:", e);
+    }
+  }
+
+  // Your other initialization code...
+  getUserData();
+  getAdminData();
+  fetchProducts();
+  fetchExclusive();
+  fetchDashBoard();
+  getTestimonials();
+}, []);
 
   useEffect(() => {
     if (userData?.id) {
@@ -250,6 +376,7 @@ export const AppContextProvider = (props) => {
     testimonials,
     userOrders,
     cartItems,
+    guestCart,
     addToCart,
     removeFromCart,
     getTotalCartAmount,

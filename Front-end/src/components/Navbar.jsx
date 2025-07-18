@@ -8,9 +8,10 @@ import axios from 'axios';
 import { FaSearch } from "react-icons/fa";
 
 const Navbar = ({ setShowLogin }) => {
-  const { backendUrl, userData, logout, getTotalCartItems } = useContext(AppContent);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { backendUrl, userData, logout,productsData, exclusiveOffers, getTotalCartItems } = useContext(AppContent);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -51,10 +52,49 @@ const Navbar = ({ setShowLogin }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
 
+
+
+
+  // Combine all products and exclusive offers for search
+  const allProducts = [...productsData, ...exclusiveOffers];
+
+  // Generate suggestions based on search term
+  useEffect(() => {
+    if (searchTerm.trim() && isSearchOpen) {
+      const matched = allProducts
+        .filter(item => 
+          item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          item.title?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .slice(0, 5); // Limit to 5 suggestions
+      setSuggestions(matched);
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchTerm, isSearchOpen]);
+
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+      // Check if there's an exact match
+      const exactMatch = allProducts.find(item => 
+        item.name?.toLowerCase() === searchTerm.toLowerCase() || 
+        item.title?.toLowerCase() === searchTerm.toLowerCase()
+      );
+
+      if (exactMatch) {
+        // Navigate to the appropriate page based on product type
+        if (exclusiveOffers.some(offer => offer.id === exactMatch.id)) {
+          navigate(`/offers#product-${exactMatch.id}`);
+        } else {
+          navigate(`/Allcollection#product-${exactMatch.id}`);
+        }
+      } else {
+        // No exact match, show search results page
+        navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+      }
+      
       setIsSearchOpen(false);
       setSearchTerm('');
     }
@@ -91,17 +131,57 @@ const Navbar = ({ setShowLogin }) => {
           </Link>
 
           {isSearchOpen ? (
-            <form onSubmit={handleSearchSubmit} className="flex items-center border rounded overflow-hidden">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-2 py-1 outline-none text-sm w-40"
-                placeholder="Search shoes..."
-                autoFocus
-              />
-              <button type="button" className="px-2 bg-gray-200 hover:bg-gray-300" onClick={() => setIsSearchOpen(false)}>✕</button>
-            </form>
+           <form onSubmit={handleSearchSubmit} className="flex items-center border rounded overflow-hidden">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    if (!isSearchOpen) setIsSearchOpen(true);
+                  }}
+                  onFocus={() => setIsSearchOpen(true)}
+                  className="px-2 py-1 outline-none text-sm w-40"
+                  placeholder="Search shoes..."
+                  autoFocus={isSearchOpen}
+                />
+                <button type="submit" className="px-2 bg-gray-200 hover:bg-gray-300">
+                  🔍
+                </button>
+                {isSearchOpen && (
+                  <button 
+                    type="submit" 
+                    className="px-2 bg-gray-200 hover:bg-gray-300" 
+                    onClick={() => setIsSearchOpen(false)}
+                  >
+                    ✕
+                  </button>
+                )}
+
+
+                {/* Search suggestions dropdown */}
+                {isSearchOpen && suggestions.length > 0 && (
+                  <div className="absolute z-10 mt-19 w-47 bg-white border border-gray-200 rounded shadow-lg">
+                    {suggestions.map((item) => (
+                      <div 
+                        key={item.id}
+                        className="p-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => {
+                          if (exclusiveOffers.some(offer => offer.id === item.id)) {
+                            navigate(`/offers#product-${item.id}`);
+                          } else {
+                            navigate(`/Allcollection#product-${item.id}`);
+                          }
+                          setIsSearchOpen(false);
+                          setSearchTerm('');
+                        }}
+                      >
+                        {item.name || item.title}
+                      </div>
+                    ))}
+                  </div>
+                )}
+         </form>
+   
           ) : (
             <div onClick={() => setIsSearchOpen(true)} className="border px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
               <FaSearch className="text-gray-700" />

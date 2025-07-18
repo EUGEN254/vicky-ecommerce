@@ -18,7 +18,7 @@ const About = () => {
           At <strong>Vicky's Shoe Hub</strong>, we believe shoes should be more than just stylish — they should feel amazing to wear. Whether you're chasing trends or looking for timeless comfort, we’ve got you covered with a curated collection designed for every lifestyle.
         </p>
         <p className="text-gray-600 text-lg mt-4 leading-relaxed">
-          Our commitment to exceptional customer experience, fast delivery, and quality craftsmanship makes Vicky's Shoe Hub the go-to destination for footwear lovers. Walk with confidence — walk with Gracie.
+          Our commitment to exceptional customer experience, fast delivery, and quality craftsmanship makes Vicky's Shoe Hub the go-to destination for footwear lovers. Walk with confidence — walk with Vicky.
         </p>
       </motion.div>
     </div>

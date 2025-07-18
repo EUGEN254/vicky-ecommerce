@@ -2,7 +2,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { createProduct,getAllProducts } from '../Models/productsModel.js';
 import {v2 as cloudinary} from 'cloudinary'
 import { getOffers } from '../Models/offersModels.js';
-import { getUserOrders } from '../Models/getUserOrders.js';
 import { dashboard } from '../Models/dashboard.js';
 import pool from '../config/connectDb.js';
 
@@ -19,8 +18,6 @@ export const createProducts = async (req, res) => {
       description 
       
     } = req.body;
-
-    console.log('Received description:', description);
 
     const parsedSizes = sizes.split(',').map(s => s.trim());
     const parsedColors = colors.split(',').map(c => c.trim());
@@ -59,6 +56,84 @@ export const createProducts = async (req, res) => {
     res.json({ success: false, message: 'Product creation failed.' });
   }
 };
+
+export const addExclusiveOffers = async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      price_off,
+      original_price,
+      price,
+      expiry_date,
+      colors,
+      sizes,
+      category_id: categoryId, 
+    } = req.body;
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No images uploaded' });
+    }
+
+    const imageUploadPromises = req.files.map(file =>
+      cloudinary.uploader.upload(file.path)
+    );
+    const images = await Promise.all(imageUploadPromises);
+    const imageUrls = images.map(img => img.secure_url);
+
+    const [result] = await pool.query(
+      `INSERT INTO exclusive_offers 
+       (title, description, price_off, original_price, price, expiry_date, image, colors, sizes, category_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        title,
+        description,
+        price_off,
+        original_price,
+        price,
+        expiry_date,
+        JSON.stringify(imageUrls),
+        Array.isArray(colors) ? colors.join(',') : colors,
+        Array.isArray(sizes) ? sizes.join(',') : sizes,
+        categoryId, 
+      ]
+    );
+
+    res.status(201).json({
+      message: 'Offer created',
+      offerId: result.insertId,
+      title,
+      image: imageUrls
+    });
+  } catch (error) {
+    console.error('Create offer error:', error);
+    res.status(500).json({ error: 'Failed to create offer' });
+  }
+};
+
+
+export const deleteExclusiveOffer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Optional: check if the offer exists before deleting
+    const [rows] = await pool.query(`SELECT * FROM exclusive_offers WHERE id = ?`, [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Offer not found' });
+    }
+
+    // Delete the offer
+    await pool.query(`DELETE FROM exclusive_offers WHERE id = ?`, [id]);
+
+    res.status(200).json({ message: 'Offer deleted successfully', id });
+  } catch (error) {
+    console.error('Delete offer error:', error);
+    res.status(500).json({ error: 'Failed to delete offer' });
+  }
+};
+
+
+
 
 export const updateProduct = async (req, res) => {
   try {
@@ -122,34 +197,32 @@ export const getProducts =  async (req,res) => {
     
 }
 
-export const deleteProduct = async (req, res) => {
+export const deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    try {
-      const [result] = await pool.query(
-        'DELETE FROM products WHERE id = ?',
-        [id]
-      );
-      
-      
-      if (result.affectedRows > 0) {
-        res.json({ success: true, message: 'Product deleted successfully' });
-      } else {
-        res.json({ success: false, message: 'Product not found' });
-      }
-    } catch (error) {
-      throw error;
+
+    const [result] = await pool.query(
+      'DELETE FROM user_orders WHERE id = ?',
+      [id]
+    );
+
+    if (result.affectedRows > 0) {
+      res.json({ success: true, message: 'Order deleted successfully' });
+    } else {
+      res.status(404).json({ success: false, message: 'Order not found' });
     }
   } catch (error) {
-    console.error(error);
-    res.json({ 
+    console.error('Delete Order Error:', error);
+    res.status(500).json({ 
       success: false, 
-      message: 'Failed to delete product',
+      message: 'Failed to delete order', 
       error: error.message 
     });
   }
 };
+
+
+
 export const exclusiveOffers = async (req, res) => {
   try {
     const offers = await getOffers();
@@ -163,9 +236,28 @@ export const exclusiveOffers = async (req, res) => {
     });
   }
 }
+
 export const getOrders = async (req, res) => {
   try {
-    const orders = await getUserOrders();
+    const { userId } = req.query; 
+    
+    if (!userId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "User ID is required" 
+      });
+    }
+
+    const [orders] = await pool.query(
+      `SELECT uo.*, p.name AS product_name, c.name AS category_name, p.images AS product_images
+       FROM user_orders uo
+       LEFT JOIN products p ON uo.productid = p.id
+       LEFT JOIN categories c ON uo.categoryid = c.id
+       WHERE uo.user_id = ?
+       ORDER BY uo.order_date DESC`,
+      [userId]
+    );
+
     res.json({ success: true, data: orders });
   } catch (error) {
     console.error("UserOrders controller error:", error);
@@ -177,18 +269,27 @@ export const getOrders = async (req, res) => {
   }
 }
 
-export const getOrderById = async (orderId) => {
+export const getOrderById = async (req, res) => {
   try {
-      const [rows] = await pool.query(`
-          SELECT * FROM user_orders 
-          WHERE id = ?;
-        `, [orderId]);
-    return rows[0];
+    const { id } = req.params; 
+
+    const [rows] = await pool.query(
+      'SELECT is_paid FROM user_orders WHERE id = ?',
+      [id]
+    );
+
+    if (rows.length > 0) {
+      return res.json({ order: rows[0] });
+    } else {
+      return res.status(404).json({ message: "Order not found" });
+    }
   } catch (error) {
-      console.error("Error fetching order:", error);
-      throw error;
+    console.error("Get order error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 export const dashboardData = async (req,res) => {
   try {
@@ -273,6 +374,65 @@ export const addInventory = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Error updating inventory' });
+  }
+};
+
+
+
+
+
+
+
+
+export const getUserOrders =async (req, res) => {
+  try {
+    const [orders] = await pool.query(`
+      SELECT 
+      o.*, 
+      p.name AS product_name, 
+      p.images AS product_images,  -
+      u.name AS user_name,
+      u.email AS user_email
+      FROM user_orders o
+      JOIN products p ON o.productid = p.id
+      JOIN users u ON o.user_id = u.id
+      ORDER BY o.order_date DESC
+    `);
+    res.json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+};
+
+export const deleteUserOrders = async (req, res) => {
+  try {
+    const [result] = await pool.query('DELETE FROM user_orders WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete order' });
+  }
+};
+
+
+export const updateUserOrders = async (req, res) => {
+  const { status } = req.body;
+  const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+  
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  try {
+    await db.query('UPDATE user_orders SET status = ? WHERE id = ?', [status, req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update order status' });
   }
 };
 

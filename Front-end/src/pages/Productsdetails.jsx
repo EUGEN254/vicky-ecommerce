@@ -26,7 +26,33 @@ const ProductDetails = () => {
     const allProducts = [...productsData, ...exclusiveOffers];
     const found = allProducts.find(p => String(p.id) === id);
     if (found) {
-      setProduct(found);
+      // Parse and clean sizes
+      const parsedSizes = (() => {
+        if (Array.isArray(found.sizes)) {
+          return found.sizes.map(String).filter(s => s && !isNaN(Number(s)));
+        }
+        if (typeof found.sizes === 'string') {
+          try {
+            const parsed = JSON.parse(found.sizes);
+            if (Array.isArray(parsed)) {
+              return parsed.map(String).filter(s => s && !isNaN(Number(s)));
+            }
+          } catch {
+            return found.sizes.split(',').map(s => s.trim()).filter(s => s && !isNaN(Number(s)));
+          }
+        }
+        return [];
+      })();
+
+      // Parse and clean colors
+      const parsedColors =
+        typeof found.colors === 'string'
+          ? found.colors.split(',').map(c => c.trim()).filter(Boolean)
+          : Array.isArray(found.colors)
+            ? found.colors.map(String).filter(Boolean)
+            : [];
+
+      setProduct({ ...found, sizes: parsedSizes, colors: parsedColors });
 
       const imageArray = found.images || found.image;
       const resolvedImages = Array.isArray(imageArray) ? imageArray : [imageArray];
@@ -77,7 +103,9 @@ const ProductDetails = () => {
   return (
     <div className='pt-28 md:py-35 px-4 md:px-16 lg:px-24 xl:px-32'>
       <div className='flex flex-col md:flex-row items-start md:items-center gap-2'>
-        <h1 className="text-2xl font-bold">{product.name} <span className='font-inter text-sm'>({product.type || 'Premium'})</span></h1>
+        <h1 className="text-2xl font-bold">
+          {product.name || product.title} <span className='font-inter text-sm'>({product.type || 'Premium'})</span>
+        </h1>
         {product.discount_value && (
           <p className='text-xs font-inter y-1.5 px-3 text-white bg-orange-500 rounded-full'>
             {product.discount_value}% OFF
@@ -111,7 +139,7 @@ const ProductDetails = () => {
 
       <div className='flex flex-col md:flex-row md:justify-between mt-10'>
         <div className='flex flex-col'>
-          <h1 className='text-3xl md:text-4xl font-playfair'>{product.name} Features</h1>
+          <h1 className='text-3xl md:text-4xl font-playfair'>{product.name || product.title} Features</h1>
           <div className='flex flex-wrap items-center mt-3 mb-6 gap-4'>
             {product.features?.map((feature, index) => (
               <div key={index} className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70'>
@@ -135,6 +163,7 @@ const ProductDetails = () => {
         </p>
       </div>
 
+      {/* Form Section */}
       <form className='flex flex-col md:flex-row items-start md:items-center justify-between bg-white shadow-[0px_0px_20px_rgba(0,0,0,0.15)] p-6 rounded-xl mx-auto mt-16 max-w-6xl'>
         <div className='flex flex-col flex-wrap md:flex-row gap-4 md:gap-10 text-gray-500'>
           <div className='flex flex-col'>
@@ -186,7 +215,6 @@ const ProductDetails = () => {
               required
               className='max-w-20 rounded border border-gray-300 px-3 py-2 mt-1.5 outline-none'
             />
-
           </div>
         </div>
 
@@ -220,6 +248,7 @@ const ProductDetails = () => {
         </button>
       </form>
 
+      {/* Benefits */}
       <div className='mt-12 space-y-4'>
         {productBenefits.map((benefit, index) => (
           <div key={index} className='flex items-start gap-4'>
@@ -234,6 +263,7 @@ const ProductDetails = () => {
         ))}
       </div>
 
+      {/* Product Description */}
       {product.description && (
         <div className='max-w-3xl border-y border-gray-300 my-12 py-10 text-gray-500'>
           <h3 className='text-xl font-bold mb-4 text-gray-800'>Product Details</h3>
@@ -241,25 +271,29 @@ const ProductDetails = () => {
         </div>
       )}
 
-      <div className='flex flex-col items-start gap-4 bg-gray-50 p-6 rounded-lg mt-12'>
-        <div className='flex gap-4 items-center'>
-          <div className='bg-orange-100 p-3 rounded-full'>
-            <FaStore className="text-orange-500 text-2xl" />
-          </div>
-          <div>
-            <p className='text-lg md:text-xl font-semibold'>
-              {product.category_name || product.owner_name || 'Our Store'}
-            </p>
-            <div className='flex items-center mt-1'>
-              {renderStars(4.5)}
-              <p className='ml-2'>200+ products</p>
-            </div>
-          </div>
-        </div>
-        <Link to="/Allcollection" className='px-6 py-2 mt-4 rounded text-white bg-primary hover:bg-primary-dull transition-all'>
-          View More Products
-        </Link>
+      {/* Store Info */}
+<div className='flex flex-col items-start gap-4 bg-gray-50 p-6 rounded-lg mt-12'>
+  <div className='flex gap-4 items-center'>
+    <div className='bg-orange-100 p-3 rounded-full'>
+      <FaStore className="text-orange-500 text-2xl" />
+    </div>
+    <div>
+      <p className='text-lg md:text-xl font-semibold'>
+        {product.category_name || product.owner_name || 'Our Store'}
+      </p>
+      <div className='flex items-center mt-1'>
+        {renderStars(4.5)}
+        <p className='ml-2'>200+ products</p>
       </div>
+    </div>
+  </div>
+  <Link 
+    to={exclusiveOffers.some(p => String(p.id) === id) ? "/offers" : "/Allcollection"} 
+    className='px-6 py-2 mt-4 rounded text-white bg-primary hover:bg-primary-dull transition-all'
+  >
+    {exclusiveOffers.some(p => String(p.id) === id) ? 'View More Offers' : 'View More Products'}
+  </Link>
+</div>
     </div>
   );
 };

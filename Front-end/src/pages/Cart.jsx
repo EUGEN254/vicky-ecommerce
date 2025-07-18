@@ -3,10 +3,22 @@ import { AppContent } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom'
 
 const Cart = () => {
+  const { 
+    productsData,
+    cartItems,
+    guestCart,
+    addToCart,
+    exclusiveOffers,
+    removeFromCart,
+    getTotalCartAmount,
+    userData
+  } = useContext(AppContent);
   
-
-  const {productsData,cartItems,addToCart,removeFromCart,getTotalCartAmount} = useContext(AppContent)
-  const navigate = useNavigate()
+  const allProducts = [...productsData, ...exclusiveOffers];
+  const navigate = useNavigate();
+  
+  // Use the correct cart based on login status
+  const currentCart = userData?.id ? cartItems : guestCart;
 
   return (
     <div className="pb-16 mt-36">
@@ -23,33 +35,53 @@ const Cart = () => {
         <hr className="border-t border-gray-200" />
 
         {/* Cart Items */}
-        {
-            productsData.map((item) => {
-              const cartItem = cartItems[item.id];
-              if (cartItem && cartItem.quantity > 0) {
-                return (
-                  <div key={item.id}>
-                    <div className="grid grid-cols-6 items-center gap-4 text-black text-sm px-6 py-4 min-w-[768px]">
-                      <img src={item.images[0]} alt="product" className="w-12 h-12 object-cover rounded" />
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {cartItem.color} / {cartItem.size}
-                        </p>
-                      </div>
-                      <p>KES {item.price}</p>
-                      <p>{cartItem.quantity}</p>
-                      <p>KES {item.price * cartItem.quantity}</p>
-                      <p onClick={() => removeFromCart(item.id)} className="text-red-500 cursor-pointer font-bold">x</p>
-                    </div>
-                    <hr className="border-t border-gray-200" />
+        {allProducts.map((item) => {
+          const cartItem = currentCart[item.id];
+          if (cartItem && cartItem.quantity > 0) {
+            return (
+              <div key={item.id}>
+                <div className="grid grid-cols-6 items-center gap-4 text-black text-sm px-6 py-4 min-w-[768px]">
+                  <img 
+                    src={item.images?.[0] || item.image?.[0] || ''} 
+                    alt="product" 
+                    className="w-12 h-12 object-cover rounded" 
+                  />
+                  <div>
+                    <p className="font-medium">{item.name || item.title}</p>
+                    <p className="text-xs text-gray-500">
+                      {cartItem.color} / {cartItem.size}
+                    </p>
                   </div>
-                );
-              }
-              return null;
-            })
-        }
-
+                  <p>KES {item.price}</p>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => removeFromCart(item.id, 1)}
+                      className="px-2 py-1 bg-gray-200 rounded"
+                    >
+                      -
+                    </button>
+                    <p>{cartItem.quantity}</p>
+                    <button 
+                      onClick={() => addToCart(item.id, cartItem.size, cartItem.color, 1)}
+                      className="px-2 py-1 bg-gray-200 rounded"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <p>KES {item.price * cartItem.quantity}</p>
+                  <p 
+                    onClick={() => removeFromCart(item.id)} 
+                    className="text-red-500 cursor-pointer font-bold"
+                  >
+                    x
+                  </p>
+                </div>
+                <hr className="border-t border-gray-200" />
+              </div>
+            );
+          }
+          return null;
+        })}
       </div>
 
       {/* Bottom Section */}
@@ -80,31 +112,7 @@ const Cart = () => {
             <p className="text-red-500 font-medium">Your cart is empty</p>
           )}
         </div>
-
-        {/* Promo Code//on mantainance}
-        {/* <div className="flex-1">
-          <p className="text-gray-600 mb-2">If you have promo code, enter it here</p>
-          <div className="flex items-center bg-gray-200 rounded overflow-hidden">
-            <input
-              type="text"
-              placeholder="promo code"
-              className="flex-1 bg-transparent px-3 py-2 outline-none"
-              disabled={getTotalCartAmount() === 0} // disable input when cart is empty
-            />
-            <button
-              className={`px-5 py-2 transition ${
-                getTotalCartAmount() === 0
-                  ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
-              disabled={getTotalCartAmount() === 0}
-            >
-              Submit
-            </button>
-          </div>
-        </div> */}
       </div>
-
     </div>
   )
 }

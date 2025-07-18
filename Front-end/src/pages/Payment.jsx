@@ -2,28 +2,43 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContent } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FiCreditCard, FiDollarSign, FiSmartphone } from 'react-icons/fi';
+import { FiSmartphone } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
-const Payment = () => {
-  const { cartItems, productsData, backendUrl, getTotalCartAmount, setCartItems } = useContext(AppContent);
+const Payment = ({ setShowLogin }) => {
+  const { 
+    cartItems, 
+    guestCart,
+    productsData, 
+    exclusiveOffers,
+    backendUrl, 
+    getTotalCartAmount, 
+    setCartItems,
+    getUserData,
+    userData
+  } = useContext(AppContent);
+  
   const navigate = useNavigate();
-  const {getUserData,userData} = useContext(AppContent)
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    address: '',
-    phone: '',
-    city: '',
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem('pendingOrder');
+    return saved ? JSON.parse(saved) : {
+      name: '',
+      email: '',
+      address: '',
+      phone: '',
+      city: '',
+    };
   });
 
   const [paymentMethod, setPaymentMethod] = useState('');
   const [mpesaAmount, setMpesaAmount] = useState('');
-  const [bankOption, setBankOption] = useState('');
-  const [bankDetails, setBankDetails] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [mpesaStage, setMpesaStage] = useState('input'); // 'input', 'processing', 'success', 'failed'
+  const [mpesaStage, setMpesaStage] = useState('input');
+  const [showAmountError, setShowAmountError] = useState(false);
+
+  // Use the correct cart based on login status
+  const currentCart = userData?.id ? cartItems : guestCart;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,21 +59,22 @@ const Payment = () => {
     return new Date(date).toISOString().slice(0, 19).replace('T', ' ');
   };
 
+  const validateMpesaAmount = () => {
+    const totalAmount = getTotalCartAmount() + deliveryFee;
+    const enteredAmount = parseFloat(mpesaAmount);
+    return enteredAmount >= totalAmount;
+  };
+
   const handleMpesaPayment = async (orderId) => {
     try {
       setMpesaStage('processing');
-      console.log(orderId);
-      
       
       const response = await axios.post(`${backendUrl}/mpesa/stkpush`, {
         phone: formData.phone,
         amount: mpesaAmount,
         orderId: orderId
       });
-      console.log("gere is the response",response);
-      console.log("here is the form habdl mpesa",orderId)
       
-  
       if (response.data.success) {
         const checkPayment = async (attempts = 0) => {
           if (attempts >= 30) { 
@@ -68,17 +84,12 @@ const Payment = () => {
   
           try {
             const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
-            console.log("here is the ",data);
-            console.log("here",data);
-            
             
             if (data.order?.is_paid) {
- 
               setMpesaStage('success');
-              const user = userData;
               setCartItems({});
-              if (user?.id) {
-                localStorage.removeItem(`cart_${user.id}`);
+              if (userData?.id) {
+                localStorage.removeItem(`cart_${userData.id}`);
               }
               setTimeout(() => navigate('/My-orders'), 2000);
             } else {
@@ -100,37 +111,45 @@ const Payment = () => {
     }
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const user = userData;
+    if (!user?.id) {
+      localStorage.setItem('pendingOrder', JSON.stringify(formData));
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      setShowLogin(true);
+      setIsProcessing(false);
+      return;
+    }
   
     if (!formData.name || !formData.email || !formData.address || !formData.phone || !paymentMethod) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
   
-    if (paymentMethod === 'Mpesa' && !mpesaAmount) {
-      alert("Please enter Mpesa amount");
-      return;
-    }
-  
-    if (paymentMethod === 'Bank' && (!bankOption || !bankDetails)) {
-      alert("Please enter bank details");
-      return;
+    if (paymentMethod === 'Mpesa') {
+      if (!mpesaAmount) {
+        toast.error("Please enter Mpesa amount");
+        return;
+      }
+      
+      if (!validateMpesaAmount()) {
+        setShowAmountError(true);
+        toast.error(`Amount must be at least KES ${getTotalCartAmount() + deliveryFee}`);
+        return;
+      }
     }
 
     setIsProcessing(true);
   
     try {
-      const user = userData;
-      if (!user?.id) {
-        throw new Error("User not logged in");
-      }
-  
-     const newOrders = productsData
-        .filter(product => cartItems[product.id]?.quantity > 0)
+      const allProducts = [...productsData, ...exclusiveOffers];
+      
+      const newOrders = allProducts
+        .filter(product => currentCart[product.id]?.quantity > 0)
         .map(product => {
-          const item = cartItems[product.id];
+          const item = currentCart[product.id];
           return {
             productid: product.id,
             categoryid: product.category_id || null,
@@ -154,31 +173,37 @@ const Payment = () => {
           };
         });
   
+      if (newOrders.length === 0) {
+        throw new Error("No items in cart");
+      }
+  
       const { data } = await axios.post(`${backendUrl}/api/orders`, { 
         orders: newOrders,
         userId: user.id 
       });
       
-      
-      
       if (data.success) {
         if (paymentMethod === 'Mpesa') {
           await handleMpesaPayment(data.orderId);
         } else {
-          // Clear cart and redirect
           setCartItems({});
           localStorage.removeItem(`cart_${user.id}`);
           navigate('/My-orders');
         }
       } else {
-        alert(data.message || "Failed to place order");
+        toast.error(data.message || "Failed to place order");
       }
     } catch (error) {
       console.error("Order error:", error);
-      alert(error.message || "Error placing order");
+      toast.error(error.message || "Error placing order");
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const getCartItems = () => {
+    const allProducts = [...productsData, ...exclusiveOffers];
+    return allProducts.filter(product => currentCart[product.id]?.quantity > 0);
   };
 
   return (
@@ -333,58 +358,24 @@ const Payment = () => {
                           type="number"
                           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                           value={mpesaAmount}
-                          onChange={(e) => setMpesaAmount(e.target.value)}
+                          onChange={(e) => {
+                            setMpesaAmount(e.target.value);
+                            setShowAmountError(false);
+                          }}
                           required
                         />
+                        {showAmountError && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Amount must be at least Ksh {getTotalCartAmount() + deliveryFee}
+                          </p>
+                        )}
                         <p className="mt-1 text-xs text-gray-500">
                           You'll receive an M-Pesa prompt on your phone to complete payment
                         </p>
                       </div>
                     )}
 
-                    <div className="flex items-center">
-                      <input
-                        id="bank"
-                        name="paymentMethod"
-                        type="radio"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                        checked={paymentMethod === 'Bank'}
-                        onChange={() => setPaymentMethod('Bank')}
-                      />
-                      <label htmlFor="bank" className="ml-3 flex items-center">
-                        <FiCreditCard className="h-5 w-5 text-blue-500 mr-2" />
-                        <span className="block text-sm font-medium text-gray-700">Bank Transfer</span>
-                      </label>
-                    </div>
-
-                    {paymentMethod === 'Bank' && (
-                      <div className="ml-7 pl-1 border-l-2 border-blue-200 space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Bank</label>
-                          <select
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            value={bankOption}
-                            onChange={(e) => setBankOption(e.target.value)}
-                            required
-                          >
-                            <option value="">Select Bank</option>
-                            <option value="Equity">Equity Bank</option>
-                            <option value="KCB">KCB Bank</option>
-                            <option value="Cooperative">Cooperative Bank</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-                          <input
-                            type="text"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            value={bankDetails}
-                            onChange={(e) => setBankDetails(e.target.value)}
-                            required
-                          />
-                        </div>
-                      </div>
-                    )}
+                    
                   </div>
                 </div>
 
@@ -417,26 +408,26 @@ const Payment = () => {
             <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
             
             <div className="divide-y divide-gray-200">
-              {productsData.filter(product => cartItems[product.id]?.quantity > 0).map((product) => (
+              {getCartItems().map((product) => (
                 <div key={product.id} className="py-4 flex justify-between">
                   <div className="flex">
                     <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                       <img
-                        src={product.images?.[0] || assets.placeholderImage}
-                        alt={product.name}
+                        src={product.images?.[0] || product.image?.[0] || '/placeholder.jpg'}
+                        alt={product.name || product.title}
                         className="h-full w-full object-cover object-center"
                       />
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-sm font-medium text-gray-900">{product.name}</h3>
+                      <h3 className="text-sm font-medium text-gray-900">{product.name || product.title}</h3>
                       <p className="mt-1 text-sm text-gray-500">
-                        {cartItems[product.id].size} / {cartItems[product.id].color}
+                      {currentCart[product.id].size} / {currentCart[product.id].color}
                       </p>
-                      <p className="mt-1 text-sm text-gray-500">Qty: {cartItems[product.id].quantity}</p>
+                      <p className="mt-1 text-sm text-gray-500">Qty: {currentCart[product.id].quantity}</p>
                     </div>
                   </div>
                   <p className="text-sm font-medium text-gray-900">
-                    Ksh {product.price * cartItems[product.id].quantity}
+                    Ksh {product.price * currentCart[product.id].quantity}
                   </p>
                 </div>
               ))}
