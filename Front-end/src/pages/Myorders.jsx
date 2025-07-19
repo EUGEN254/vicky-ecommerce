@@ -40,8 +40,9 @@ const MyOrders = () => {
       </div>
 
       <div className="max-w-6xl w-full text-gray-800">
-        <div className="hidden md:grid md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 font-semibold text-base py-3 text-gray-700">
+        <div className="hidden md:grid md:grid-cols-[2fr_1fr_2fr_1fr] w-full border-b border-gray-300 font-semibold text-base py-3 text-gray-700">
           <div>Products</div>
+          <div className='-ml-43'>Product details</div>
           <div>Order & Delivery</div>
           <div>Payment</div>
         </div>
@@ -49,7 +50,7 @@ const MyOrders = () => {
         {filteredOrders.map((order) => (
           <div
             key={order.id}
-            className="grid grid-cols-1 md:grid-cols-[3fr_2fr_1fr] w-full border-b border-gray-300 py-6 first:border-t"
+            className="grid grid-cols-1 md:grid-cols-[3fr_3fr_2fr] w-full border-b border-gray-300 py-6 first:border-t"
           >
             {/* Product Details */}
             <div className="flex flex-col md:flex-row">
@@ -67,14 +68,13 @@ const MyOrders = () => {
                 </p>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <p className='font-medium  text-black'>Shipping to</p>
-                  <img src={assets.locationIcon} alt="location" className="w-4 h-4" />
                   <span>{order.shipping_address?.city}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>Qty: {order.quantity}</span>
                 </div>
                 <p className="text-base font-medium text-gray-800">
-                  Total: ${order.total_amount}
+                  Total: KES {order.total_amount}
                 </p>
               </div>
             </div>
@@ -99,20 +99,20 @@ const MyOrders = () => {
             <div className="flex flex-col items-start justify-center pt-3 md:pt-0">
               <div className="flex items-center gap-2">
                 <div
-                  className={`h-3 w-3 rounded-full ${order.is_paid ? 'bg-green-500' : 'bg-red-500'}`}
+                  className={`h-3 w-3 rounded-full ml-20 ${order.is_paid ? 'bg-green-500' : 'bg-red-500'}`}
                 ></div>
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium ">
                   Payment:{' '}
                   {order.is_paid ? (
                     <span className="text-green-600 font-semibold">Paid</span>
                   ) : (
-                    <span className="text-red-500 font-semibold">Not Paid</span>
+                    <span className="text-red-500 font-semibold  ">Not Paid</span>
                   )}
                 </p>
               </div>
               {!order.is_paid && (
                 <Link to={'/payment'}
-                className="px-4 py-1.5 mt-4 text-xs border border-gray-400 rounded-full hover:bg-gray-100 transition-all cursor-pointer">
+                className="px-4 py-1.5 mt-4 text-xs border border-gray-400 ml-26 rounded-full hover:bg-gray-100 transition-all cursor-pointer">
                   Pay Now
                 </Link>
               )}

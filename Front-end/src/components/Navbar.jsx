@@ -192,9 +192,13 @@ const Navbar = ({ setShowLogin }) => {
 
           {userData ? (
             <div className="relative group">
-              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 font-medium cursor-pointer">
+               <div
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 font-medium cursor-pointer"
+              >
                 {userData.name?.[0]?.toUpperCase() || 'U'}
               </div>
+              {isUserDropdownOpen && (
               <div className="absolute hidden group-hover:block top-10 right-0 z-10 text-black rounded bg-white shadow-md">
                 <ul className="list-none m-0 p-2 text-sm min-w-[150px]">
                   {!userData.isAccountVerified && (
@@ -203,6 +207,7 @@ const Navbar = ({ setShowLogin }) => {
                   <li onClick={logout} className="py-2 px-3 hover:bg-gray-100 cursor-pointer whitespace-nowrap">Logout</li>
                 </ul>
               </div>
+              )}
             </div>
           ) : (
             <button onClick={() => setShowLogin(true)} className="bg-black text-white px-6 py-2 rounded-full ml-4 hover:bg-gray-800 text-sm">

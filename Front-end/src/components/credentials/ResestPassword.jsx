@@ -101,11 +101,10 @@ const ResestPassword = () => {
   return (
     <div className='flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400'>
       <Link to='/'>
-          <img 
-              src={assets.logo} 
-              alt="logo" 
-              className='absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer' 
-            />
+          <p className='absolute left-5 sm:left-20 font-bold top-5 w-28 sm:w-32 cursor-pointer'>
+              Vicky's Shoe Hub
+               
+          </p> 
       </Link>
 
       {!isEmailSent &&

@@ -421,14 +421,14 @@ export const deleteUserOrders = async (req, res) => {
 
 export const updateUserOrders = async (req, res) => {
   const { status } = req.body;
-  const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+  const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled','paid'];
   
   if (!validStatuses.includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
 
   try {
-    await db.query('UPDATE user_orders SET status = ? WHERE id = ?', [status, req.params.id]);
+    await pool.query('UPDATE user_orders SET status = ? WHERE id = ?', [status, req.params.id]);
     res.json({ success: true });
   } catch (error) {
     console.error(error);

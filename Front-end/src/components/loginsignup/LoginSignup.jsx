@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { assets } from '../../assets/assets'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AppContent } from '../../context/AppContext'
 import axios from 'axios'
 import {toast} from 'react-toastify'
@@ -166,8 +166,10 @@ const LoginSignup = ({ setShowLogin }) => {
 
         {/* Terms */}
         <div className="flex items-start gap-2 text-xs mt-[-10px]">
-          <input type="checkbox" required disabled={isLoading} className="mt-1" />
-          <p>By continuing, I agree to the terms and conditions</p>
+          <input type="checkbox" required disabled={isLoading} className="mt-1 " />
+          <Link to='/terms-conditions'>
+              <p onClick={()=> setShowLogin(false)} className="cursor-pointer">By continuing, I agree to the terms and conditions</p>
+          </Link>
         </div>
 
         {/* Switch Mode */}

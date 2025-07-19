@@ -1,6 +1,7 @@
 import React from 'react';
 import { FiTruck, FiCreditCard, FiShield, FiRefreshCw } from 'react-icons/fi';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 const TermsConditions = () => {
   return (
@@ -24,7 +25,7 @@ const TermsConditions = () => {
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Vick's Shoe Hub</h2>
           <p className="text-gray-600">
-            These terms and conditions outline the rules and regulations for the use of Welcome to Vick's Shoe Hub Website, located at www.solestride.com.
+            These terms and conditions outline the rules and regulations for the use of Welcome to Vick's Shoe Hub Website, located at <Link to='https://vicky-shoe-hub.vercel.app/'><span className='text-blue-400 cursor-pointer'>https://vicky-shoe-hub.vercel.app/</span></Link> 
           </p>
         </div>
 
@@ -97,7 +98,7 @@ const TermsConditions = () => {
           <section>
             <h3 className="text-xl font-semibold text-gray-800 mb-3">6. Limitation of Liability</h3>
             <p className="text-gray-600">
-              SoleStride shall not be liable for any special or consequential damages that result from the use of, or the inability to use, the products purchased from us.
+              Vicky's Shoe Hub shall not be liable for any special or consequential damages that result from the use of, or the inability to use, the products purchased from us.
             </p>
           </section>
 
@@ -111,7 +112,7 @@ const TermsConditions = () => {
           <section>
             <h3 className="text-xl font-semibold text-gray-800 mb-3">8. Contact Information</h3>
             <p className="text-gray-600">
-              Questions about the Terms and Conditions should be sent to us at support@vicky.com or call +254742364290.
+              Questions about the Terms and Conditions should be sent to us at <Link to='/contact-us'><span className='text-blue-400'>Contact Support</span></Link> or call +254742364290.
             </p>
           </section>
         </div>

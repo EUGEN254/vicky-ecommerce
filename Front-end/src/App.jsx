@@ -38,6 +38,7 @@ import ChatBotWidget from './components/ChatBotWidget'
 import ExclusiveOffer from './admin/components/exclusiveoffer/ExclusiveOffer'
 import ExclusiveOffersPage from './pages/ExclusiveOffersPage'
 import TermsConditions from './pages/TermsConditions'
+import NotFound from './components/NotFound'
 
 function App() {
   const location = useLocation()
@@ -151,19 +152,53 @@ function App() {
           
 
           {/* Protected Admin Panel Layout with Nested Routes */}
-          <Route path="/Admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route index element={<Dashboard/>}/>
-            <Route path="addproduct" element={<Addproduct />} />
-            <Route path="listproduct" element={<ListProduct />} />
-            <Route path="addoffer" element={<ExclusiveOffer />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="orders" element={<Orders />} />
-            <Route path="customers" element={<Customers/>} />
-            <Route path="inventory" element={<Inventory/>} />
-            <Route path="discounts" element={<Discounts/>} />
-            <Route path="settings" element={<Settings/>} />
-            <Route path="queries" element={<Queries/>} />
+          <Route path="/Admin" element={<Layout />}>
+            <Route
+              index
+              element={<ProtectedRoute role="admin"><Dashboard /></ProtectedRoute>}
+            />
+            <Route
+              path="addproduct"
+              element={<ProtectedRoute role="admin"><Addproduct /></ProtectedRoute>}
+            />
+            <Route
+              path="listproduct"
+              element={<ProtectedRoute role="admin"><ListProduct /></ProtectedRoute>}
+            />
+            <Route
+              path="addoffer"
+              element={<ProtectedRoute role="admin"><ExclusiveOffer /></ProtectedRoute>}
+            />
+            <Route
+              path="categories"
+              element={<ProtectedRoute role="admin"><Categories /></ProtectedRoute>}
+            />
+            <Route
+              path="orders"
+              element={<ProtectedRoute role="admin"><Orders /></ProtectedRoute>}
+            />
+            <Route
+              path="customers"
+              element={<ProtectedRoute role="admin"><Customers /></ProtectedRoute>}
+            />
+            <Route
+              path="inventory"
+              element={<ProtectedRoute role="admin"><Inventory /></ProtectedRoute>}
+            />
+            <Route
+              path="discounts"
+              element={<ProtectedRoute role="admin"><Discounts /></ProtectedRoute>}
+            />
+            <Route
+              path="settings"
+              element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>}
+            />
+            <Route
+              path="queries"
+              element={<ProtectedRoute role="admin"><Queries /></ProtectedRoute>}
+            />
           </Route>
+          <Route path="*" element={<NotFound/>} />
         </Routes>
       </div>
 
