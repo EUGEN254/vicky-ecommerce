@@ -22,31 +22,29 @@ const Payment = ({ setShowLogin }) => {
     userData
   } = useContext(AppContent);
 
+
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    address: '',
+    phone: '',
+    city: '',
+  });
+
+  const [paymentMethod, setPaymentMethod] = useState('Mpesa');
+  const [mpesaAmount, setMpesaAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [mpesaStage, setMpesaStage] = useState('input');
+  const [showAmountError, setShowAmountError] = useState(false);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+
+  
   const isSingleOrderPayment = !!orderFromMyOrders;
 
-  // Calculate amounts based on payment type
-  const getPaymentAmounts = () => {
-    if (isSingleOrderPayment) {
-      return {
-        subtotal: parseFloat(orderFromMyOrders.total_amount),
-        deliveryFee: orderFromMyOrders.shipping_address?.city?.toLowerCase() === 'nairobi' ? 0 : 200,
-        total: parseFloat(orderFromMyOrders.total_amount) + (orderFromMyOrders.shipping_address?.city?.toLowerCase() === 'nairobi' ? 0 : 200)
-      };
-    } else {
-      const subtotal = getTotalCartAmount();
-      const delivery = formData.city?.toLowerCase() === 'nairobi' ? 0 : 200;
-      return {
-        subtotal: subtotal,
-        deliveryFee: delivery,
-        total: subtotal + delivery
-      };
-    }
-  };
-  
-  const { subtotal, deliveryFee, total } = getPaymentAmounts();
-  
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState(() => {
+
+   // Initialize form data and delivery fee
+   useEffect(() => {
     const saved = localStorage.getItem('pendingOrder');
     const defaultData = {
       name: '',
@@ -55,29 +53,57 @@ const Payment = ({ setShowLogin }) => {
       phone: '',
       city: '',
     };
-    
+
     if (isSingleOrderPayment && orderFromMyOrders.shipping_address) {
-      return {
+      const initialData = {
         ...defaultData,
         ...orderFromMyOrders.shipping_address
       };
+      setFormData(initialData);
+      setDeliveryFee(initialData.city?.toLowerCase() === 'nairobi' ? 0 : 200);
+    } else if (saved) {
+      const parsedData = JSON.parse(saved);
+      setFormData(parsedData);
+      setDeliveryFee(parsedData.city?.toLowerCase() === 'nairobi' ? 0 : 200);
     }
-    
-    return saved ? JSON.parse(saved) : defaultData;
-  });
+  }, [isSingleOrderPayment, orderFromMyOrders]);
 
-  const [paymentMethod, setPaymentMethod] = useState('Mpesa');
-  const [mpesaAmount, setMpesaAmount] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [mpesaStage, setMpesaStage] = useState('input');
-  const [showAmountError, setShowAmountError] = useState(false);
+   // Calculate amounts based on payment type
+   const getPaymentAmounts = () => {
+    if (isSingleOrderPayment) {
+      const subtotal = parseFloat(orderFromMyOrders.total_amount);
+      return {
+        subtotal,
+        deliveryFee,
+        total: subtotal + deliveryFee
+      };
+    } else {
+      const subtotal = getTotalCartAmount();
+      return {
+        subtotal,
+        deliveryFee,
+        total: subtotal + deliveryFee
+      };
+    }
+  };
+  
+  const { subtotal, total } = getPaymentAmounts();
+
+
 
   // Use the correct cart based on login status
   const currentCart = userData?.id ? cartItems : guestCart;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const newFormData = { ...formData, [name]: value };
+    setFormData(newFormData);
+    
+    // Update delivery fee when city changes
+    if (name === 'city') {
+      const newDeliveryFee = value.toLowerCase() === 'nairobi' ? 0 : 200;
+      setDeliveryFee(newDeliveryFee);
+    }
   };
 
   const handleMpesaPayment = async (orderId) => {
@@ -199,6 +225,7 @@ const Payment = ({ setShowLogin }) => {
         if (newOrders.length === 0) {
           throw new Error("No items in cart");
         }
+
         const { data } = await axios.post(`${backendUrl}/api/orders`, { 
           orders: newOrders,
           userId: user.id 

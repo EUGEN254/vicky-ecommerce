@@ -426,7 +426,7 @@ export const updateFailedOrder = async (req, res) => {
   const {
     payment_method,
     shipping_address,
-    is_paid = false 
+    is_paid = false
   } = req.body;
 
   try {
@@ -434,111 +434,92 @@ export const updateFailedOrder = async (req, res) => {
     if (!id || !payment_method || !shipping_address) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: id, payment_method, or shipping_address'
+        message: 'Missing required fields'
       });
     }
 
-    // Parse shipping_address if it's a string
+    // Parse shipping_address
     let parsedShippingAddress;
     try {
       parsedShippingAddress = typeof shipping_address === 'string' 
         ? JSON.parse(shipping_address) 
         : shipping_address;
-    } catch (parseError) {
+    } catch (error) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid shipping_address format. Must be valid JSON'
+        message: 'Invalid shipping address format'
       });
     }
 
-    // Validate shipping address structure
+    // Validate shipping address
     if (!parsedShippingAddress.name || !parsedShippingAddress.phone || 
         !parsedShippingAddress.address || !parsedShippingAddress.city) {
       return res.status(400).json({
         success: false,
-        message: 'Shipping address must include name, phone, address, and city'
+        message: 'Shipping address incomplete'
       });
     }
 
     // Prepare update data
     const updateData = {
       payment_method,
-      shipping_address: parsedShippingAddress,
+      shipping_address: JSON.stringify(parsedShippingAddress),
       is_paid,
-      status: is_paid ? 'paid' : 'pending', 
+      status: is_paid ? 'paid' : 'pending',
       updated_at: new Date()
     };
 
-    // Only update delivery date if this is the first payment attempt
+    // Build SQL query
+    let sql = `UPDATE user_orders SET 
+      payment_method = ?,
+      shipping_address = ?,
+      is_paid = ?,
+      status = ?,
+      updated_at = ?`;
+    
+    const params = [
+      updateData.payment_method,
+      updateData.shipping_address,
+      updateData.is_paid,
+      updateData.status,
+      updateData.updated_at
+    ];
+
+    // Add delivery_date if is_paid is true
     if (is_paid) {
-      updateData.delivery_date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days from now
+      sql += `, delivery_date = IF(ISNULL(delivery_date), ?, delivery_date)`;
+      params.push(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000));
     }
 
-    // Execute the update
-    const [result] = await pool.execute(
-      `UPDATE user_orders 
-       SET 
-         payment_method = ?,
-         shipping_address = ?,
-         is_paid = ?,
-         status = ?,
-         updated_at = ?,
-         delivery_date = IF(ISNULL(delivery_date), ?, delivery_date)
-       WHERE id = ?`,
-      [
-        updateData.payment_method,
-        JSON.stringify(updateData.shipping_address),
-        updateData.is_paid,
-        updateData.status,
-        updateData.updated_at,
-        updateData.delivery_date,
-        id
-      ]
-    );
+    sql += ` WHERE id = ?`;
+    params.push(id);
+
+    // Execute update
+    const [result] = await pool.execute(sql, params);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Order not found or no changes made'
+        message: 'Order not found'
       });
     }
 
-    // Fetch the updated order to return
+    // Return updated order
     const [updatedOrder] = await pool.execute(
-      `SELECT 
-        id,
-        productid,
-        categoryid,
-        order_date,
-        delivery_date,
-        total_amount,
-        quantity,
-        selected_size,
-        selected_color,
-        status,
-        payment_method,
-        is_paid,
-        shipping_address,
-        created_at,
-        updated_at,
-        user_id
-       FROM user_orders 
-       WHERE id = ?`,
+      `SELECT * FROM user_orders WHERE id = ?`,
       [id]
     );
 
     return res.json({
       success: true,
-      message: 'Order updated successfully',
       order: updatedOrder[0]
     });
 
   } catch (error) {
-    console.error('Error updating order:', error);
+    console.error('Update error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error while updating order',
-      error: error.message
+      message: 'Server error'
     });
   }
 };
