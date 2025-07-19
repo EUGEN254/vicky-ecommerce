@@ -11,8 +11,6 @@ const Dashboard = () => {
   const [filterText, setFilterText] = useState('');
   const [filterPaid, setFilterPaid] = useState('all');
 
- 
-
   // Monthly Products Chart
   const productChartData = {
     labels: dashboardata?.productsByMonth?.map(item => item.month) || [],
@@ -43,7 +41,7 @@ const Dashboard = () => {
 
 
   useEffect(() => {
-    fetchUserOrders();
+     fetchUserOrders();
   }, []);
 
   useEffect(() => {

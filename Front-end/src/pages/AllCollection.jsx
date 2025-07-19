@@ -182,7 +182,7 @@ const Allcollection = () => {
                 {product.discount_active
                   ? (
                     <>
-                      <span className="line-through text-red-400 mr-2">Kshs {product.price}</span>
+                      <span className="line-through text-red-400 mr-2">KES {product.price}</span>
                       <span className="text-green-700 font-semibold">
                         Kshs {product.price - (product.price * product.discount_value / 100)}
                       </span><br />
@@ -190,7 +190,7 @@ const Allcollection = () => {
                         ({product.discount_name} - {product.discount_value}% off)
                       </span>
                     </>
-                  ) : `Kshs ${product.price}`}
+                  ) : `KES ${product.price}`}
               </p>
             </div>
           </div>
@@ -198,7 +198,7 @@ const Allcollection = () => {
       </div>
 
       {/* Filters */}
-      <div className='bg-white w-80 border border-gray-300 text-gray-600 max-lg:mb-8 lg:mt-16 lg:ml-4'>
+      <div className='bg-white w-80 border border-gray-300 text-gray-600 max-lg:mb-10 lg:mt-16 lg:ml-4'>
         <div className={`flex items-center justify-between px-5 py-2.5 min-lg:border-b border-gray-300 ${openFilters && 'border-b'}`}>
           <p className='text-base font-medium text-gray-800'>FILTERS</p>
           <div className='text-xs cursor-pointer'>
@@ -227,7 +227,7 @@ const Allcollection = () => {
             {priceRange.map((range, index) => (
               <CheckBox
                 key={index}
-                label={`Kshs ${range}`}
+                label={`KES ${range}`}
                 selected={selectedFilters.priceRange.includes(range)}
                 onChange={(checked) => handleFilterChange(checked, range, 'priceRange')}
               />

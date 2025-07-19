@@ -64,7 +64,7 @@ const ShoeCard = ({ product, index }) => {
 
         <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 sm:mt-5'>
           <p className='sm:text-xl font-medium text-gray-800'>
-            Kshs.{product.price}
+            KES {product.price}
           </p>
           <button 
             className='px-4 py-2 text-xs sm:text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-all cursor-pointer whitespace-nowrap'

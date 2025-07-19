@@ -111,8 +111,11 @@ const MyOrders = () => {
                 </p>
               </div>
               {!order.is_paid && (
-                <Link to={'/payment'}
-                className="px-4 py-1.5 mt-4 text-xs border border-gray-400 ml-26 rounded-full hover:bg-gray-100 transition-all cursor-pointer">
+                <Link 
+                  to={'/payment'}
+                  state={{ order }}
+                  className="px-4 py-1.5 mt-4 text-xs border border-gray-400 ml-26 rounded-full hover:bg-gray-100 transition-all cursor-pointer"
+                >
                   Pay Now
                 </Link>
               )}

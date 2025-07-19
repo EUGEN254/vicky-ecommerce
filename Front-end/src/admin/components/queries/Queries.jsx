@@ -113,12 +113,12 @@ const Queries = () => {
         <p className="text-sm text-gray-500">
           Total: {allQueries.length} | Unanswered: {allQueries.filter((q) => !q.response).length}
         </p>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex  items-center gap-3 w-full sm:w-auto">
           <label className="font-medium">Filter:</label>
           <select
             value={filter}
             onChange={(e) => handleFilterChange(e.target.value)}
-            className="border p-2 rounded w-full sm:w-auto"
+            className="border px-3 py-2 rounded w-full sm:w-auto"
           >
             <option value="all">All</option>
             <option value="answered">Answered</option>

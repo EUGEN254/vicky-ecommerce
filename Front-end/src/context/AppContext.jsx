@@ -239,7 +239,7 @@ const getTotalCartItems = () => {
   const fetchExclusive = async () => {
     try {
       const { data } = await axios.get(backendUrl + '/api/products/exclusive_offers');
-      console.log(data);
+     
       
       if (data.success) {
         const offers = data.data.map(offer => {
@@ -320,6 +320,7 @@ const getTotalCartItems = () => {
   const fetchUserOrders = async () => {
     if (!userData?.id) return;
       const { data } = await axios.get(`${backendUrl}/api/orders?userId=${userData.id}`);
+
       if (data.success) {
         setUserOrders(data.data);
       }
@@ -342,40 +343,40 @@ const getTotalCartItems = () => {
   };
 
   // ---- useEffects ----
- // Add this to your initial useEffect in AppContextProvider
-useEffect(() => {
-  // Load guest cart if exists
-  const savedGuestCart = localStorage.getItem('guestCart');
-  if (savedGuestCart) {
-    try {
-      setGuestCart(JSON.parse(savedGuestCart));
-    } catch (e) {
-      console.error("Failed to parse guest cart:", e);
-    }
-  }
-
-  // Your other initialization code...
-  getUserData();
-  getAdminData();
-  fetchProducts();
-  fetchExclusive();
-  fetchDashBoard();
-  getTestimonials();
-}, []);
-useEffect(() => {
-  const validateCart = (cart) => {
-    if (!cart || typeof cart !== 'object') return {};
-    const validCart = {};
-    
-    Object.entries(cart).forEach(([id, item]) => {
-      if (item && typeof item === 'object' && 
-          Number.isInteger(item.quantity)) {
-        validCart[id] = item;
+  useEffect(() => {
+    // Load guest cart if exists
+    const savedGuestCart = localStorage.getItem('guestCart');
+    if (savedGuestCart) {
+      try {
+        setGuestCart(JSON.parse(savedGuestCart));
+      } catch (e) {
+        console.error("Failed to parse guest cart:", e);
       }
-    });
-    
-    return validCart;
-  };
+    }
+
+    // Your other initialization code...
+    getUserData();
+    getAdminData();
+    fetchProducts();
+    fetchExclusive();
+    fetchDashBoard();
+    getTestimonials();
+  }, []);
+
+  useEffect(() => {
+    const validateCart = (cart) => {
+      if (!cart || typeof cart !== 'object') return {};
+      const validCart = {};
+      
+      Object.entries(cart).forEach(([id, item]) => {
+        if (item && typeof item === 'object' && 
+            Number.isInteger(item.quantity)) {
+          validCart[id] = item;
+        }
+      });
+      
+      return validCart;
+    };
 
   // Load guest cart
   const savedGuestCart = localStorage.getItem('guestCart');

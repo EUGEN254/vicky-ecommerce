@@ -279,7 +279,7 @@ const Inventory = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleEdit(item)}
-                          className="text-blue-600 px-4 py-2 rounded-2xl bg-blue-800 hover:text-blue-900 mr-4"
+                          className="text-white px-4 py-2 rounded-2xl bg-blue-800 hover:text-blue-900 mr-4"
                         >
                           Edit
                         </button>

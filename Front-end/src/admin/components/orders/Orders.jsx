@@ -152,7 +152,7 @@ const Orders = () => {
                       {format(new Date(order.order_date), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${Number(order.total_amount || 0).toFixed(2)}
+                      KES {Number(order.total_amount || 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select

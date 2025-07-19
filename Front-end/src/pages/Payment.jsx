@@ -1,11 +1,15 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContent } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FiSmartphone } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
 const Payment = ({ setShowLogin }) => {
+  const { state } = useLocation();
+  const orderFromMyOrders = state?.order;
+  console.log('Order from MyOrders:', orderFromMyOrders);
+
   const { 
     cartItems, 
     guestCart,
@@ -17,22 +21,53 @@ const Payment = ({ setShowLogin }) => {
     getUserData,
     userData
   } = useContext(AppContent);
+
+  const isSingleOrderPayment = !!orderFromMyOrders;
+
+  // Calculate amounts based on payment type
+  const getPaymentAmounts = () => {
+    if (isSingleOrderPayment) {
+      return {
+        subtotal: parseFloat(orderFromMyOrders.total_amount),
+        deliveryFee: orderFromMyOrders.shipping_address?.city?.toLowerCase() === 'nairobi' ? 0 : 200,
+        total: parseFloat(orderFromMyOrders.total_amount) + (orderFromMyOrders.shipping_address?.city?.toLowerCase() === 'nairobi' ? 0 : 200)
+      };
+    } else {
+      const subtotal = getTotalCartAmount();
+      const delivery = formData.city?.toLowerCase() === 'nairobi' ? 0 : 200;
+      return {
+        subtotal: subtotal,
+        deliveryFee: delivery,
+        total: subtotal + delivery
+      };
+    }
+  };
+  
+  const { subtotal, deliveryFee, total } = getPaymentAmounts();
   
   const navigate = useNavigate();
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('pendingOrder');
-    return saved ? JSON.parse(saved) : {
+    const defaultData = {
       name: '',
       email: '',
       address: '',
       phone: '',
       city: '',
     };
+    
+    if (isSingleOrderPayment && orderFromMyOrders.shipping_address) {
+      return {
+        ...defaultData,
+        ...orderFromMyOrders.shipping_address
+      };
+    }
+    
+    return saved ? JSON.parse(saved) : defaultData;
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Mpesa');
   const [mpesaAmount, setMpesaAmount] = useState('');
-  const [deliveryFee, setDeliveryFee] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mpesaStage, setMpesaStage] = useState('input');
   const [showAmountError, setShowAmountError] = useState(false);
@@ -43,26 +78,6 @@ const Payment = ({ setShowLogin }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-
-    if (name === 'city') {
-      if (value.trim().toLowerCase() === 'nairobi') {
-        setDeliveryFee(0);
-      } else if (value.trim().toLowerCase() !== '') {
-        setDeliveryFee(Math.floor(Math.random() * 101) + 200);
-      } else {
-        setDeliveryFee(0);
-      }
-    }
-  };
-
-  const formatDateTime = (date) => {
-    return new Date(date).toISOString().slice(0, 19).replace('T', ' ');
-  };
-
-  const validateMpesaAmount = () => {
-    const totalAmount = getTotalCartAmount() + deliveryFee;
-    const enteredAmount = parseFloat(mpesaAmount);
-    return enteredAmount >= totalAmount;
   };
 
   const handleMpesaPayment = async (orderId) => {
@@ -87,9 +102,11 @@ const Payment = ({ setShowLogin }) => {
             
             if (data.order?.is_paid) {
               setMpesaStage('success');
-              setCartItems({});
-              if (userData?.id) {
-                localStorage.removeItem(`cart_${userData.id}`);
+              if (!isSingleOrderPayment) {
+                setCartItems({});
+                if (userData?.id) {
+                  localStorage.removeItem(`cart_${userData.id}`);
+                }
               }
               setTimeout(() => navigate('/My-orders'), 2000);
             } else {
@@ -123,79 +140,79 @@ const Payment = ({ setShowLogin }) => {
       return;
     }
   
-    if (!formData.name || !formData.email || !formData.address || !formData.phone || !paymentMethod) {
+    if (!formData.name || !formData.email || !formData.address || !formData.phone || !formData.city) {
       toast.error("Please fill in all required fields");
       return;
     }
   
-    if (paymentMethod === 'Mpesa') {
-      if (!mpesaAmount) {
-        toast.error("Please enter Mpesa amount");
-        return;
-      }
-      
-      if (!validateMpesaAmount()) {
-        setShowAmountError(true);
-        toast.error(`Amount must be at least KES ${getTotalCartAmount() + deliveryFee}`);
-        return;
-      }
+    if (!mpesaAmount) {
+      toast.error("Please enter Mpesa amount");
+      return;
+    }
+    
+    if (parseFloat(mpesaAmount) < total) {
+      setShowAmountError(true);
+      toast.error(`Amount must be at least KES ${total}`);
+      return;
     }
 
     setIsProcessing(true);
   
     try {
-      const allProducts = [...productsData, ...exclusiveOffers];
-      
-      const newOrders = allProducts
-        .filter(product => currentCart[product.id]?.quantity > 0)
-        .map(product => {
-          const item = currentCart[product.id];
-          return {
-            productid: product.id,
-            categoryid: product.category_id || null,
-            userId: user.id,
-            quantity: item.quantity,
-            selected_size: item.size,
-            selected_color: item.color,
-            total_amount: product.price * item.quantity,
-            delivery_fee: deliveryFee,
-            order_date: formatDateTime(new Date()),
-            delivery_date: formatDateTime(Date.now() + 3 * 24 * 60 * 60 * 1000),
-            is_paid: paymentMethod === 'Bank',
-            payment_method: paymentMethod,
-            shipping_address: JSON.stringify({ 
-              name: formData.name,
-              email: formData.email,
-              phone: formData.phone,
-              address: formData.address,
-              city: formData.city,
-            })
-          };
+      if (isSingleOrderPayment) {
+        // Handle single order payment
+        const { data } = await axios.put(`${backendUrl}/api/orders/order/${orderFromMyOrders.id}`, {
+          is_paid: false, 
+          payment_method: 'Mpesa',
+          shipping_address: formData
         });
   
-      if (newOrders.length === 0) {
-        throw new Error("No items in cart");
-      }
-  
-      const { data } = await axios.post(`${backendUrl}/api/orders`, { 
-        orders: newOrders,
-        userId: user.id 
-      });
-      
-      if (data.success) {
-        if (paymentMethod === 'Mpesa') {
-          await handleMpesaPayment(data.orderId);
+        if (data.success) {
+          await handleMpesaPayment(orderFromMyOrders.id);
         } else {
-          setCartItems({});
-          localStorage.removeItem(`cart_${user.id}`);
-          navigate('/My-orders');
+          toast.error(data.message || "Failed to update order");
         }
       } else {
-        toast.error(data.message || "Failed to place order");
+        // Handle cart-based payment
+        const allProducts = [...productsData, ...exclusiveOffers];
+        
+        const newOrders = allProducts
+          .filter(product => currentCart[product.id]?.quantity > 0)
+          .map(product => {
+            const item = currentCart[product.id];
+            return {
+              productid: product.id,
+              categoryid: product.category_id || null,
+              userId: user.id,
+              quantity: item.quantity,
+              selected_size: item.size,
+              selected_color: item.color,
+              total_amount: product.price * item.quantity,
+              delivery_fee: deliveryFee,
+              order_date: new Date().toISOString(),
+              delivery_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+              is_paid: false,
+              payment_method: 'Mpesa',
+              shipping_address: formData
+            };
+          });
+        if (newOrders.length === 0) {
+          throw new Error("No items in cart");
+        }
+        const { data } = await axios.post(`${backendUrl}/api/orders`, { 
+          orders: newOrders,
+          userId: user.id 
+        });
+        
+        if (data.success) {
+          await handleMpesaPayment(data.orderId);
+        } else {
+          toast.error(data.message || "Failed to place order");
+        }
       }
     } catch (error) {
-      console.error("Order error:", error);
-      toast.error(error.message || "Error placing order");
+      console.error("Payment error:", error);
+      toast.error(error.message || "Error processing payment");
     } finally {
       setIsProcessing(false);
     }
@@ -214,144 +231,143 @@ const Payment = ({ setShowLogin }) => {
             Complete Your Purchase
           </h1>
           <p className="mt-3 text-xl text-gray-500">
-            Secure checkout with multiple payment options
+            Secure checkout with M-Pesa payment
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Payment Form */}
           <form onSubmit={handleSubmit}>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-6">Payment Details</h2>
-            
-            {mpesaStage === 'processing' ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p className="text-lg font-medium">Processing M-Pesa Payment</p>
-                <p className="text-gray-500 mt-2">
-                  Please check your phone and enter your M-Pesa PIN when prompted
-                </p>
-              </div>
-            ) : mpesaStage === 'success' ? (
-              <div className="text-center py-12">
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                  <svg className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-semibold mb-6">Payment Details</h2>
+              
+              {mpesaStage === 'processing' ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-lg font-medium">Processing M-Pesa Payment</p>
+                  <p className="text-gray-500 mt-2">
+                    Please check your phone and enter your M-Pesa PIN when prompted
+                  </p>
                 </div>
-                <p className="text-lg font-medium text-green-600">Payment Successful!</p>
-                <p className="text-gray-500 mt-2">
-                  Your order has been placed successfully
-                </p>
-              </div>
-            ) : mpesaStage === 'failed' ? (
-              <div className="text-center py-12">
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                  <svg className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+              ) : mpesaStage === 'success' ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                    <svg className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-green-600">Payment Successful!</p>
+                  <p className="text-gray-500 mt-2">
+                    Your order has been placed successfully
+                  </p>
                 </div>
-                <p className="text-lg font-medium text-red-600">Payment Failed</p>
-                <p className="text-gray-500 mt-2">
-                  Please try again or use a different payment method
-                </p>
-                <button
-                  onClick={() => setMpesaStage('input')}
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Try Again
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                    />
+              ) : mpesaStage === 'failed' ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <svg className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeJoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <input
-                        type="email"
-                        name="email"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                    <select
-                      name="city"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      value={formData.city}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select City</option>
-                      <option value="Nairobi">Nairobi</option>
-                      <option value="Mombasa">Mombasa</option>
-                      <option value="Kisumu">Kisumu</option>
-                      <option value="Eldoret">Eldoret</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Shipping Address</label>
-                    <textarea
-                      name="address"
-                      rows="3"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      value={formData.address}
-                      onChange={handleChange}
-                      required
-                    ></textarea>
-                  </div>
+                  <p className="text-lg font-medium text-red-600">Payment Failed</p>
+                  <p className="text-gray-500 mt-2">
+                    Please try again or contact support
+                  </p>
+                  <button
+                    onClick={() => setMpesaStage('input')}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Try Again
+                  </button>
                 </div>
-
-                <div className="mt-6">
-                  <h3 className="text-lg font-medium mb-4">Payment Method</h3>
+              ) : (
+                <>
                   <div className="space-y-4">
-                    <div className="flex items-center">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                       <input
-                        id="mpesa"
-                        name="paymentMethod"
-                        type="radio"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                        checked={paymentMethod === 'Mpesa'}
-                        onChange={() => setPaymentMethod('Mpesa')}
+                        type="text"
+                        name="name"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
                       />
-                      <label htmlFor="mpesa" className="ml-3 flex items-center">
-                        <FiSmartphone className="h-5 w-5 text-green-500 mr-2" />
-                        <span className="block text-sm font-medium text-gray-700">M-Pesa</span>
-                      </label>
                     </div>
 
-                    {paymentMethod === 'Mpesa' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          name="email"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                      <select
+                        name="city"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        value={formData.city}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select City</option>
+                        <option value="Nairobi">Nairobi</option>
+                        <option value="Mombasa">Mombasa</option>
+                        <option value="Kisumu">Kisumu</option>
+                        <option value="Eldoret">Eldoret</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Shipping Address</label>
+                      <textarea
+                        name="address"
+                        rows="3"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        value={formData.address}
+                        onChange={handleChange}
+                        required
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <h3 className="text-lg font-medium mb-4">Payment Method</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <input
+                          id="mpesa"
+                          name="paymentMethod"
+                          type="radio"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          checked={paymentMethod === 'Mpesa'}
+                          onChange={() => setPaymentMethod('Mpesa')}
+                        />
+                        <label htmlFor="mpesa" className="ml-3 flex items-center">
+                          <FiSmartphone className="h-5 w-5 text-green-500 mr-2" />
+                          <span className="block text-sm font-medium text-gray-700">M-Pesa</span>
+                        </label>
+                      </div>
+
                       <div className="ml-7 pl-1 border-l-2 border-green-200">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Amount (KES)</label>
                         <input
@@ -366,85 +382,115 @@ const Payment = ({ setShowLogin }) => {
                         />
                         {showAmountError && (
                           <p className="mt-1 text-xs text-red-500">
-                            Amount must be at least Ksh {getTotalCartAmount() + deliveryFee}
+                            Amount must be at least Ksh {total}
                           </p>
                         )}
                         <p className="mt-1 text-xs text-gray-500">
                           You'll receive an M-Pesa prompt on your phone to complete payment
                         </p>
                       </div>
-                    )}
-
-                    
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-8">
-                  <button
-                    type="submit"
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      'Complete Order'
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+                  <div className="mt-8">
+                    <button
+                      type="submit"
+                      className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        'Complete Order'
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </form>
 
           {/* Order Summary */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
             
-            <div className="divide-y divide-gray-200">
-              {getCartItems().map((product) => (
-                <div key={product.id} className="py-4 flex justify-between">
+            {isSingleOrderPayment ? (
+              <div className="divide-y divide-gray-200">
+                <div className="py-4 flex justify-between">
                   <div className="flex">
                     <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                       <img
-                        src={product.images?.[0] || product.image?.[0] || '/placeholder.jpg'}
-                        alt={product.name || product.title}
+                        src={orderFromMyOrders.product_images?.[0] || '/placeholder.jpg'}
+                        alt={orderFromMyOrders.product_name}
                         className="h-full w-full object-cover object-center"
                       />
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-sm font-medium text-gray-900">{product.name || product.title}</h3>
+                      <h3 className="text-sm font-medium text-gray-900">
+                        {orderFromMyOrders.product_name}
+                      </h3>
                       <p className="mt-1 text-sm text-gray-500">
-                      {currentCart[product.id].size} / {currentCart[product.id].color}
+                        {orderFromMyOrders.category_name} Shoes
                       </p>
-                      <p className="mt-1 text-sm text-gray-500">Qty: {currentCart[product.id].quantity}</p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Size: {orderFromMyOrders.selected_size}, Color: {orderFromMyOrders.selected_color}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Qty: {orderFromMyOrders.quantity}
+                      </p>
                     </div>
                   </div>
                   <p className="text-sm font-medium text-gray-900">
-                    Ksh {product.price * currentCart[product.id].quantity}
+                    Ksh {orderFromMyOrders.total_amount}
                   </p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {getCartItems().map((product) => (
+                  <div key={product.id} className="py-4 flex justify-between">
+                    <div className="flex">
+                      <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                        <img
+                          src={product.images?.[0] || product.image?.[0] || '/placeholder.jpg'}
+                          alt={product.name || product.title}
+                          className="h-full w-full object-cover object-center"
+                        />
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-sm font-medium text-gray-900">{product.name || product.title}</h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {currentCart[product.id].size} / {currentCart[product.id].color}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">Qty: {currentCart[product.id].quantity}</p>
+                      </div>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">
+                      Ksh {product.price * currentCart[product.id].quantity}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="border-t border-gray-200 pt-4 mt-4">
               <div className="flex justify-between text-base font-medium text-gray-900">
                 <p>Subtotal</p>
-                <p>Ksh {getTotalCartAmount()}</p>
+                <p>Ksh {subtotal.toFixed(2)}</p>
               </div>
               <div className="flex justify-between text-sm text-gray-500 mt-1">
                 <p>Shipping</p>
-                <p>Ksh {deliveryFee}</p>
+                <p>Ksh {deliveryFee.toFixed(2)}</p>
               </div>
               <div className="flex justify-between text-lg font-bold mt-4">
                 <p>Total</p>
-                <p>Ksh {getTotalCartAmount() + deliveryFee}</p>
+                <p>Ksh {total.toFixed(2)}</p>
               </div>
             </div>
           </div>
