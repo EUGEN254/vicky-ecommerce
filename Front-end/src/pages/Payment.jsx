@@ -46,7 +46,7 @@ const Payment = ({ setShowLogin }) => {
 
     if (name === 'city') {
       if (value.trim().toLowerCase() === 'nairobi') {
-        setDeliveryFee(100);
+        setDeliveryFee(0);
       } else if (value.trim().toLowerCase() !== '') {
         setDeliveryFee(Math.floor(Math.random() * 101) + 200);
       } else {

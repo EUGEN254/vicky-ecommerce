@@ -25,7 +25,7 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'https://a0052675bbc4.ngrok-free.app',
-    'https://gracie-shoe-hub.vercel.app',
+    'https://vicky-shoe-hub.vercel.app',
   ],
   credentials: true,
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',

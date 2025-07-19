@@ -74,7 +74,7 @@ function App() {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-white text-black font-playfair animate-fade">
         <h1 className="text-4xl md:text-5xl font-bold tracking-wide animate-pulse">
-          Gracie Shoe Hub
+          Vicky's Shoe Hub
         </h1>
         <p className="text-sm mt-3 text-gray-500 animate-fade">
           Loading, please wait...
