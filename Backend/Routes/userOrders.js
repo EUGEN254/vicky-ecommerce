@@ -10,6 +10,6 @@ userOrders.delete('/orders/:id', deleteUserOrders);
 userOrders.put('/orders/:id/status', updateUserOrders);
 userOrders.put('/order/:id',updateFailedOrder)
 userOrders.get('/:id', getOrderById); 
-userOrders.post('/', saveUserOrders);
+userOrders.post('/s', saveUserOrders);
 
 export default userOrders;

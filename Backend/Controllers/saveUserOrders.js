@@ -1,18 +1,16 @@
 import pool from '../config/connectDb.js';
 
 export const saveUserOrders = async (req, res) => {
+  const { orders, userId } = req.body;
+
+  if (!orders || !Array.isArray(orders)) {
+    return res.json({ success: false, message: "Invalid order format" });
+  }
+
+
   try {
-    const { orders, userId } = req.body;
+    let firstOrderId = null;
 
-    if (!orders || !userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: orders or userId'
-      });
-    }
-
-    // Process each order
-    const orderIds = [];
     for (const order of orders) {
       // Format dates for MySQL
       const orderDate = new Date(order.order_date || new Date())
@@ -27,6 +25,7 @@ export const saveUserOrders = async (req, res) => {
             .replace('T', ' ')
         : null;
 
+
       // Prepare shipping address
       let shippingAddress = null;
       try {
@@ -37,16 +36,17 @@ export const saveUserOrders = async (req, res) => {
         shippingAddress = '{}';
       }
 
-      // Generate unique order ID
-      const orderId = order.id || `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const orderId  = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      if (!firstOrderId) firstOrderId = orderId;
 
+      console.log(firstOrderId);
+      
+    
       await pool.query(
         `INSERT INTO user_orders 
-         (id, adminid, productid, categoryid, user_id, order_date, delivery_date, 
-          total_amount, quantity, selected_size, selected_color, status, 
-          payment_method, is_paid, shipping_address)
+         (id, adminid, productid, categoryid, user_id, order_date, delivery_date, total_amount, quantity, selected_size, selected_color, status, payment_method, is_paid, shipping_address)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+         [
           orderId,
           order.adminid || 1, // Default admin ID
           order.productid,
@@ -64,23 +64,19 @@ export const saveUserOrders = async (req, res) => {
           shippingAddress
         ]
       );
-
-      orderIds.push(orderId);
     }
+
+    console.log("✅ Order saved with ID:", firstOrderId);
 
     return res.json({
       success: true,
-      message: 'Orders saved successfully',
-      orderIds: orderIds
+      message: "Orders saved successfully",
+      orderId: firstOrderId, 
     });
+    
 
   } catch (error) {
-    console.error('Save order error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to save orders',
-      error: error.message,
-      sqlError: error.sqlMessage
-    });
+    console.error("❌ Save order error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };

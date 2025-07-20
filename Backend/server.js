@@ -24,7 +24,7 @@ connectCloudinary();
 const corsOptions = {
   origin: [
     'http://localhost:5173',
-    'https://24adea6f8ce2.ngrok-free.app',
+    'https://d7a25db21370.ngrok-free.app',
     'https://vicky-shoe-hub.vercel.app',
   ],
   credentials: true,

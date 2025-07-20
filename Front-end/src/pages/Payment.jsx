@@ -226,12 +226,14 @@ const Payment = ({ setShowLogin }) => {
           throw new Error("No items in cart");
         }
 
-        const { data } = await axios.post(`${backendUrl}/api/orders`, { 
+        const { data } = await axios.post(`${backendUrl}/api/orders/s`, { 
           orders: newOrders,
           userId: user.id 
         });
         
         if (data.success) {
+          console.log("saved userorders ",data);
+          
           await handleMpesaPayment(data.orderId);
         } else {
           toast.error(data.message || "Failed to place order");

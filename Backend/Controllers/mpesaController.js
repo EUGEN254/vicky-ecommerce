@@ -2,7 +2,7 @@ import axios from 'axios';
 import { generateAuthToken } from '../Middleware/mpesaAuth.js'; 
 import pool from '../config/connectDb.js';
 
-const backendUrl = 'https://24adea6f8ce2.ngrok-free.app';
+const backendUrl = 'https://d7a25db21370.ngrok-free.app';
 const MPESA_API_URL = 'https://sandbox.safaricom.co.ke';
 const BUSINESS_SHORT_CODE = '174379';
 const PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
@@ -11,7 +11,6 @@ const CALLBACK_URL = `${backendUrl}/mpesa/callback`;
 export const initiateSTKPush = async (req, res) => {
   try {
     const { phone, amount, orderId } = req.body;
-
     // Validate input
     if (!phone || !amount || !orderId) {
       return res.status(400).json({
@@ -20,8 +19,10 @@ export const initiateSTKPush = async (req, res) => {
       });
     }
 
-    // Verify order exists
-    const [order] = await pool.query(
+    console.log("Initiating payment for order:", orderId);
+
+     // Verify order exists
+     const [order] = await pool.query(
       'SELECT id FROM user_orders WHERE id = ?',
       [orderId]
     );
@@ -33,19 +34,9 @@ export const initiateSTKPush = async (req, res) => {
       });
     }
 
-    // Prepare M-Pesa request
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[^0-9]/g, '')
-      .slice(0, -3);
-    
-    const password = Buffer.from(`${BUSINESS_SHORT_CODE}${PASSKEY}${timestamp}`)
-      .toString('base64');
-    
+    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
+    const password = Buffer.from(`${BUSINESS_SHORT_CODE}${PASSKEY}${timestamp}`).toString('base64');
     const authToken = await generateAuthToken();
-
-    // Format phone number (ensure 254 prefix)
-    const formattedPhone = phone.startsWith('254') ? phone : `254${phone.slice(-9)}`;
 
     const response = await axios.post(
       `${MPESA_API_URL}/mpesa/stkpush/v1/processrequest`,
@@ -55,9 +46,9 @@ export const initiateSTKPush = async (req, res) => {
         Timestamp: timestamp,
         TransactionType: 'CustomerPayBillOnline',
         Amount: amount,
-        PartyA: formattedPhone,
+        PartyA: `254${phone.slice(-9)}`,
         PartyB: BUSINESS_SHORT_CODE,
-        PhoneNumber: formattedPhone,
+        PhoneNumber: `254${phone.slice(-9)}`,
         CallBackURL: CALLBACK_URL,
         AccountReference: `Order-${orderId}`,
         TransactionDesc: 'Payment for order',
@@ -65,7 +56,6 @@ export const initiateSTKPush = async (req, res) => {
       {
         headers: {
           Authorization: `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
         },
       }
     );
@@ -75,97 +65,67 @@ export const initiateSTKPush = async (req, res) => {
       throw new Error('M-Pesa request failed: No CheckoutRequestID received');
     }
 
+    // Save mapping between CheckoutRequestID and orderId
     const checkoutId = response.data.CheckoutRequestID;
+    console.log("hey check these ",checkoutId);
+    
+    if (checkoutId) {
+      await pool.query(
+        'INSERT INTO mpesa_checkout_map (checkout_id, order_id) VALUES (?, ?)',
+        [checkoutId, orderId]
+      );
+    }
 
-    // Save the mapping
-    await pool.query(
-      'INSERT INTO mpesa_checkout_map (checkout_id, order_id) VALUES (?, ?)',
-      [checkoutId, orderId]
-    );
-
-    return res.json({
+    res.json({
       success: true,
-      message: 'Payment initiated successfully',
-      checkoutRequestId: checkoutId,
-      merchantRequestId: response.data.MerchantRequestID,
-      orderId: orderId
+      message: 'Payment initiated',
+      data: response.data,
     });
-
+    console.log(data);
+    
   } catch (error) {
     console.error('STK Push Error:', error.response?.data || error.message);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Failed to initiate payment',
-      error: error.response?.data?.errorMessage || error.message,
+      error: error.response?.data || error.message,
     });
   }
 };
 
 export const mpesaCallback = async (req, res) => {
-  let transactionStatus = 'failed';
-  
   try {
     const callbackData = req.body;
-    
-    if (!callbackData.Body?.stkCallback) {
-      console.error('Invalid callback format:', callbackData);
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid callback format' 
-      });
-    }
+    console.log("🔥 RAW CALLBACK:", JSON.stringify(callbackData, null, 2));
 
-    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callbackData.Body.stkCallback;
+    const stk = callbackData.Body?.stkCallback;
+    console.log("🔍 STK Object Keys:", Object.keys(stk));
     
-    // Check for successful payment
-    if (ResultCode === '0') {
-      transactionStatus = 'completed';
-      
-      // Get the amount paid from callback metadata
-      let amount = 0;
-      if (CallbackMetadata?.Item) {
-        const amountItem = CallbackMetadata.Item.find(item => item.Name === 'Amount');
-        if (amountItem) amount = amountItem.Value;
-      }
+    const checkoutId = stk?.CheckoutRequestID;
+    console.log("🛒 CheckoutRequestID:", checkoutId);
 
-      // Find the associated order
-      const [mapping] = await pool.query(
+    if (checkoutId) {
+      const [rows] = await pool.query(
         'SELECT order_id FROM mpesa_checkout_map WHERE checkout_id = ?',
-        [CheckoutRequestID]
+        [checkoutId]
       );
-
-      if (mapping.length > 0) {
-        const orderId = mapping[0].order_id;
+      console.log("📦 Database lookup results:", rows);
+      
+      if (rows.length > 0) {
+        const orderId = rows[0].order_id;
+        console.log("✅ Found matching order ID:", orderId);
         
-        // Update order status
-        await pool.query(
-          `UPDATE user_orders 
-           SET is_paid = 1, 
-               status = 'paid',
-               payment_method = 'Mpesa',
-               updated_at = NOW()
-           WHERE id = ?`,
+        const updateResult = await pool.query(
+          'UPDATE user_orders SET is_paid = 1, status = "paid" WHERE id = ?',
           [orderId]
         );
-
-        // Record transaction details (optional)
-        await pool.query(
-          `INSERT INTO mpesa_transactions 
-           (checkout_id, order_id, amount, status, result_code, result_desc)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [CheckoutRequestID, orderId, amount, transactionStatus, ResultCode, ResultDesc]
-        );
+        console.log("🔄 Update result:", updateResult);
       }
     }
 
-    return res.status(200).json({ success: true });
-
+    res.status(200).end();
   } catch (error) {
-    console.error('Callback processing error:', error);
-    return res.status(500).json({ 
-      success: false,
-      message: 'Error processing callback',
-      error: error.message
-    });
+    console.error('❌ Callback Error:', error);
+    res.status(500).end();
   }
 };
