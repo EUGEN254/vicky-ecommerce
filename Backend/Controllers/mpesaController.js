@@ -76,12 +76,14 @@ export const initiateSTKPush = async (req, res) => {
       );
     }
 
-    res.json({
+     // Log BEFORE sending response
+     console.log('Payment initiated:', response.data);
+
+    return res.json({
       success: true,
       message: 'Payment initiated',
       data: response.data,
     });
-    console.log(data);
     
   } catch (error) {
     console.error('STK Push Error:', error.response?.data || error.message);
@@ -103,23 +105,40 @@ export const mpesaCallback = async (req, res) => {
     
     const checkoutId = stk?.CheckoutRequestID;
     console.log("🛒 CheckoutRequestID:", checkoutId);
+    
+    // 1. Check if this is a successful payment (ResultCode 0 = success)
+    const resultCode = stk?.ResultCode;
+    const resultDesc = stk?.ResultDesc;
+    
+    console.log("📊 Payment Result:", {
+      code: resultCode,
+      description: resultDesc
+    });
 
     if (checkoutId) {
       const [rows] = await pool.query(
         'SELECT order_id FROM mpesa_checkout_map WHERE checkout_id = ?',
         [checkoutId]
       );
-      console.log("📦 Database lookup results:", rows);
       
       if (rows.length > 0) {
         const orderId = rows[0].order_id;
-        console.log("✅ Found matching order ID:", orderId);
         
-        const updateResult = await pool.query(
-          'UPDATE user_orders SET is_paid = 1, status = "paid" WHERE id = ?',
-          [orderId]
-        );
-        console.log("🔄 Update result:", updateResult);
+        // 2. Only update if payment was successful
+        if (resultCode === '0') {
+          console.log("✅ Payment SUCCESS for order:", orderId);
+          await pool.query(
+            'UPDATE user_orders SET is_paid = 1, status = "paid" WHERE id = ?',
+            [orderId]
+          );
+        } else {
+          // 3. Handle failed payment (optional: update status to 'failed')
+          console.log("❌ Payment FAILED for order:", orderId, "Reason:", resultDesc);
+          await pool.query(
+            'UPDATE user_orders SET status = "payment_failed" WHERE id = ?',
+            [orderId]
+          );
+        }
       }
     }
 

@@ -8,8 +8,6 @@ import { toast } from 'react-toastify';
 const Payment = ({ setShowLogin }) => {
   const { state } = useLocation();
   const orderFromMyOrders = state?.order;
-  console.log('Order from MyOrders:', orderFromMyOrders);
-
   const { 
     cartItems, 
     guestCart,
@@ -21,7 +19,6 @@ const Payment = ({ setShowLogin }) => {
     getUserData,
     userData
   } = useContext(AppContent);
-
 
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -38,13 +35,10 @@ const Payment = ({ setShowLogin }) => {
   const [mpesaStage, setMpesaStage] = useState('input');
   const [showAmountError, setShowAmountError] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
-
-  
   const isSingleOrderPayment = !!orderFromMyOrders;
 
-
-   // Initialize form data and delivery fee
-   useEffect(() => {
+  // Initialize form data and delivery fee
+  useEffect(() => {
     const saved = localStorage.getItem('pendingOrder');
     const defaultData = {
       name: '',
@@ -68,8 +62,7 @@ const Payment = ({ setShowLogin }) => {
     }
   }, [isSingleOrderPayment, orderFromMyOrders]);
 
-   // Calculate amounts based on payment type
-   const getPaymentAmounts = () => {
+  const getPaymentAmounts = () => {
     if (isSingleOrderPayment) {
       const subtotal = parseFloat(orderFromMyOrders.total_amount);
       return {
@@ -88,10 +81,6 @@ const Payment = ({ setShowLogin }) => {
   };
   
   const { subtotal, total } = getPaymentAmounts();
-
-
-
-  // Use the correct cart based on login status
   const currentCart = userData?.id ? cartItems : guestCart;
 
   const handleChange = (e) => {
@@ -99,7 +88,6 @@ const Payment = ({ setShowLogin }) => {
     const newFormData = { ...formData, [name]: value };
     setFormData(newFormData);
     
-    // Update delivery fee when city changes
     if (name === 'city') {
       const newDeliveryFee = value.toLowerCase() === 'nairobi' ? 0 : 200;
       setDeliveryFee(newDeliveryFee);
@@ -118,32 +106,45 @@ const Payment = ({ setShowLogin }) => {
       
       if (response.data.success) {
         const checkPayment = async (attempts = 0) => {
-          if (attempts >= 30) { 
-            setMpesaStage('failed');
+          if (attempts >= 20) { 
+            setMpesaStage('timeout');
             return;
           }
-  
+
           try {
             const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
             
-            if (data.order?.is_paid) {
-              setMpesaStage('success');
-              if (!isSingleOrderPayment) {
-                setCartItems({});
-                if (userData?.id) {
-                  localStorage.removeItem(`cart_${userData.id}`);
+            // Enhanced status handling
+            switch(data.order?.status) {
+              case 'paid':
+                setMpesaStage('success');
+                if (!isSingleOrderPayment) {
+                  setCartItems({});
+                  if (userData?.id) {
+                    localStorage.removeItem(`cart_${userData.id}`);
+                  }
                 }
-              }
-              setTimeout(() => navigate('/My-orders'), 2000);
-            } else {
-              setTimeout(() => checkPayment(attempts + 1), 2000);
+                setTimeout(() => navigate('/My-orders'), 2000);
+                return;
+              case 'cancelled':
+                setMpesaStage('cancelled');
+                return;
+              case 'failed':
+                setMpesaStage('failed');
+                return;
+              default:
+                setTimeout(() => checkPayment(attempts + 1), 2000);
             }
           } catch (error) {
             console.error('Payment check error:', error);
-            setTimeout(() => checkPayment(attempts + 1), 2000);
+            if (attempts >= 20) {
+              setMpesaStage('error');
+            } else {
+              setTimeout(() => checkPayment(attempts + 1), 2000);
+            }
           }
         };
-  
+
         checkPayment();
       } else {
         setMpesaStage('failed');
@@ -157,8 +158,7 @@ const Payment = ({ setShowLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const user = userData;
-    if (!user?.id) {
+    if (!userData?.id) {
       localStorage.setItem('pendingOrder', JSON.stringify(formData));
       localStorage.setItem('redirectAfterLogin', window.location.pathname);
       setShowLogin(true);
@@ -186,7 +186,6 @@ const Payment = ({ setShowLogin }) => {
   
     try {
       if (isSingleOrderPayment) {
-        // Handle single order payment
         const { data } = await axios.put(`${backendUrl}/api/orders/order/${orderFromMyOrders.id}`, {
           is_paid: false, 
           payment_method: 'Mpesa',
@@ -199,7 +198,6 @@ const Payment = ({ setShowLogin }) => {
           toast.error(data.message || "Failed to update order");
         }
       } else {
-        // Handle cart-based payment
         const allProducts = [...productsData, ...exclusiveOffers];
         
         const newOrders = allProducts
@@ -222,6 +220,7 @@ const Payment = ({ setShowLogin }) => {
               shipping_address: formData
             };
           });
+
         if (newOrders.length === 0) {
           throw new Error("No items in cart");
         }
@@ -232,8 +231,6 @@ const Payment = ({ setShowLogin }) => {
         });
         
         if (data.success) {
-          console.log("saved userorders ",data);
-          
           await handleMpesaPayment(data.orderId);
         } else {
           toast.error(data.message || "Failed to place order");
@@ -270,6 +267,7 @@ const Payment = ({ setShowLogin }) => {
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-semibold mb-6">Payment Details</h2>
               
+              {/* Payment Status Screens */}
               {mpesaStage === 'processing' ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
@@ -277,6 +275,12 @@ const Payment = ({ setShowLogin }) => {
                   <p className="text-gray-500 mt-2">
                     Please check your phone and enter your M-Pesa PIN when prompted
                   </p>
+                  <button
+                    onClick={() => setMpesaStage('cancelled')}
+                    className="mt-4 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                  >
+                    Cancel Payment
+                  </button>
                 </div>
               ) : mpesaStage === 'success' ? (
                 <div className="text-center py-12">
@@ -289,6 +293,24 @@ const Payment = ({ setShowLogin }) => {
                   <p className="text-gray-500 mt-2">
                     Your order has been placed successfully
                   </p>
+                </div>
+              ) : mpesaStage === 'cancelled' ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
+                    <svg className="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-yellow-600">Payment Cancelled</p>
+                  <p className="text-gray-500 mt-2">
+                    You cancelled the M-Pesa payment prompt
+                  </p>
+                  <button
+                    onClick={() => setMpesaStage('input')}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Try Again
+                  </button>
                 </div>
               ) : mpesaStage === 'failed' ? (
                 <div className="text-center py-12">
@@ -308,7 +330,26 @@ const Payment = ({ setShowLogin }) => {
                     Try Again
                   </button>
                 </div>
+              ) : mpesaStage === 'timeout' ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-orange-100 mb-4">
+                    <svg className="h-10 w-10 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-orange-600">Payment Timeout</p>
+                  <p className="text-gray-500 mt-2">
+                    We didn't receive confirmation of your payment
+                  </p>
+                  <button
+                    onClick={() => setMpesaStage('input')}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Try Again
+                  </button>
+                </div>
               ) : (
+                /* Default Payment Form */
                 <>
                   <div className="space-y-4">
                     <div>
