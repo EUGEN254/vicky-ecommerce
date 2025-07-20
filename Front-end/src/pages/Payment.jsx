@@ -97,6 +97,13 @@ const Payment = ({ setShowLogin }) => {
   const handleMpesaPayment = async (orderId) => {
     try {
       setMpesaStage('processing');
+
+       // First check if order was already cancelled
+      const statusCheck = await axios.get(`${backendUrl}/api/orders/${orderId}`);
+      if (statusCheck.data.order?.status === 'cancelled') {
+        setMpesaStage('cancelled');
+        return;
+      }
       
       const response = await axios.post(`${backendUrl}/mpesa/stkpush`, {
         phone: formData.phone,
@@ -106,6 +113,11 @@ const Payment = ({ setShowLogin }) => {
       
       if (response.data.success) {
         const checkPayment = async (attempts = 0) => {
+          // Check if cancelled before proceeding
+          if (mpesaStage === 'cancelled') {
+            return;
+          }
+
           if (attempts >= 20) { 
             setMpesaStage('timeout');
             return;
@@ -164,6 +176,9 @@ const Payment = ({ setShowLogin }) => {
     try {
       setIsProcessing(true);
       const orderId = isSingleOrderPayment ? orderFromMyOrders.id : data?.orderId;
+      
+      // Immediately set to cancelled state for better UX
+      setMpesaStage('cancelling');
       
       const response = await axios.post(`${backendUrl}/mpesa/cancel-payment`, {
         orderId: orderId
@@ -297,7 +312,17 @@ const Payment = ({ setShowLogin }) => {
               <h2 className="text-xl font-semibold mb-6">Payment Details</h2>
               
               {/* Payment Status Screens */}
-              {mpesaStage === 'processing' ? (
+              {mpesaStage === 'cancelling' ? (
+                
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-lg font-medium">Cancelling Payment</p>
+                  <p className="text-gray-500 mt-2">
+                    Please wait while we process your cancellation
+                  </p>
+                </div>
+
+              ) : mpesaStage === 'processing' ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
                   <p className="text-lg font-medium">Processing M-Pesa Payment</p>

@@ -161,17 +161,26 @@ export const cancelSTKPush = async (req, res) => {
       });
     }
 
-    // Update order status to cancelled
+    // Update order status
     await pool.query(
       'UPDATE user_orders SET status = "cancelled" WHERE id = ?',
       [orderId]
     );
 
-    // Optional: Also update the checkout map if you want to track cancellations
-    await pool.query(
-      'UPDATE mpesa_checkout_map SET status = "cancelled" WHERE order_id = ?',
-      [orderId]
-    );
+    try {
+      // Try updating checkout map (will work if column exists)
+      await pool.query(
+        'UPDATE mpesa_checkout_map SET status = "cancelled" WHERE order_id = ?',
+        [orderId]
+      );
+    } catch (error) {
+      if (error.code === '42S22') { // Column not found error
+        console.log('Status column not found in mpesa_checkout_map, skipping');
+        // You could add the column here programmatically if needed
+      } else {
+        throw error; // Re-throw other errors
+      }
+    }
 
     res.json({
       success: true,
