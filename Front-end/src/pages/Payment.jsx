@@ -117,12 +117,15 @@ const Payment = ({ setShowLogin }) => {
       });
       
       if (response.data.success) {
-         
-         const checkPayment = async (attempts = 0) => {
-          // Check if cancelled before proceeding
-          if (mpesaStage === 'cancelled') {
+        const checkPayment = async (attempts = 0) => {
+          // Double-check cancellation status before each poll
+          const { currentStatus } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
+          if (currentStatus.order?.status === 'cancelled') {
+            setMpesaStage('cancelled');
+            clearTimeout(pollingTimeoutRef.current);
             return;
           }
+
           if (attempts >= 20) { 
             setMpesaStage('timeout');
             return;
@@ -130,7 +133,6 @@ const Payment = ({ setShowLogin }) => {
 
           try {
             const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
-            
             switch(data.order?.status) {
               case 'paid':
                 setMpesaStage('success');
@@ -145,9 +147,11 @@ const Payment = ({ setShowLogin }) => {
               case 'cancelled':
                 setMpesaStage('cancelled');
                 return;
+
               case 'failed':
                 setMpesaStage('failed');
                 return;
+
               default:
                 setTimeout(() => checkPayment(attempts + 1), 2000);
             }

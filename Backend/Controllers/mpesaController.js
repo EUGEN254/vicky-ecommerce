@@ -9,7 +9,9 @@ const PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c91
 const CALLBACK_URL = `${backendUrl}/mpesa/callback`;
 
 export const initiateSTKPush = async (req, res) => {
+  
   try {
+
     const { phone, amount, orderId } = req.body;
     // Validate input
     if (!phone || !amount || !orderId) {
@@ -34,13 +36,15 @@ export const initiateSTKPush = async (req, res) => {
       });
     }
 
-    if (order.length > 0 && order[0].status === 'cancelled') {
+    // Prevent STK push for cancelled orders
+    if (order[0].status === 'cancelled') {
       return res.status(400).json({
         success: false,
         message: 'Cannot initiate payment for cancelled order'
       });
     }
 
+    // proceed with stk push
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
     const password = Buffer.from(`${BUSINESS_SHORT_CODE}${PASSKEY}${timestamp}`).toString('base64');
     const authToken = await generateAuthToken();
@@ -204,8 +208,6 @@ export const cancelSTKPush = async (req, res) => {
       [orderId]
     );
 
-  
-     
     return res.json({
       success: true,
       message: 'Payment successfully cancelled'
