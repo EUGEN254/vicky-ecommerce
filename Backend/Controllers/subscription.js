@@ -68,6 +68,20 @@ export const unsubscribe = async (req, res) => {
             return res.status(400).send('Email address is required');
         }
 
+        // First show a confirmation page
+        if (!req.query.confirm) {
+            return res.send(`
+                <html>
+                    <body>
+                        <h2>Unsubscribe Confirmation</h2>
+                        <p>Are you sure you want to unsubscribe ${email}?</p>
+                        <a href="${process.env.VITE_BACKEND_URL}/api/messages/unsubscribe?email=${email}&confirm=true">Yes, unsubscribe me</a>
+                    </body>
+                </html>
+            `);
+        }
+
+        // Process actual unsubscription
         const [result] = await pool.query(
             'UPDATE subscribers SET unsubscribed = TRUE, unsubscribed_at = CURRENT_TIMESTAMP WHERE email = ?',
             [email.toLowerCase()]
@@ -77,20 +91,30 @@ export const unsubscribe = async (req, res) => {
             return res.status(404).send('Email not found in our subscribers list');
         }
 
-        return res.send('You have been successfully unsubscribed from our newsletter');
+        return res.send(`
+            <html>
+                <body>
+                    <h2>Unsubscription Successful</h2>
+                    <p>${email} has been unsubscribed from our newsletter.</p>
+                </body>
+            </html>
+        `);
     } catch (error) {
         console.error('Unsubscribe error:', error);
         return res.status(500).send('Internal server error');
     }
 };
 
-// Helper function for sending welcome email
+
 const sendWelcomeEmail = async (email) => {
     try {
+        const fromAddress = `"Vicky's Store" <${process.env.SENDER_EMAIL || process.env.SMTP_USER}>`;
+        
         const mailOptions = {
-            from: `"Vicky's Store" <${process.env.SENDER_EMAIL || process.env.SMTP_USER}>`,
+            from: fromAddress,
             to: email,
             subject: 'Welcome to Our Newsletter!',
+            text: `Thank you for subscribing!\n\nYou'll now receive our latest shoe collections, exclusive offers, and style inspiration.\n\nHere's 10% off your first order: WELCOME10\n\nHappy shopping!\n\nThe Vicky's Team\n\nUnsubscribe link: ${process.env.BASE_URL}/unsubscribe?email=${email}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #333;">Thank you for subscribing!</h2>
@@ -100,16 +124,19 @@ const sendWelcomeEmail = async (email) => {
                     <p>The Vicky's Team</p>
                     <hr>
                     <p style="font-size: 12px; color: #777;">
-                        If you wish to unsubscribe, <a href="${process.env.BASE_URL}/unsubscribe?email=${email}">click here</a>.
+                        If you wish to unsubscribe, <a href="${process.env.VITE_BACKEND_URL}/unsubscribe?email=${email}">click here</a>.
                     </p>
                 </div>
             `
         };
 
-        await transporter.sendMail(mailOptions);
+        const info = await transporter.sendMail(mailOptions);
+
+        return info;
         
-    } catch (error) {
+    }  catch (error) {
         console.error('Error sending welcome email:', error);
-        throw error; // Re-throw to be caught in the main try-catch
+        throw error; 
     }
 };
+
