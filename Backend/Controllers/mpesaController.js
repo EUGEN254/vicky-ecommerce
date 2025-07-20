@@ -171,30 +171,46 @@ export const cancelSTKPush = async (req, res) => {
       });
     }
 
-    // Update order status
-    await pool.query(
-      'UPDATE user_orders SET status = "cancelled" WHERE id = ?',
+    // First verify the order exists
+    const [order] = await pool.query(
+      'SELECT id, status FROM user_orders WHERE id = ?',
       [orderId]
     );
 
-    try {
-      // Try updating checkout map (will work if column exists)
-      await pool.query(
-        'UPDATE mpesa_checkout_map SET status = "cancelled" WHERE order_id = ?',
-        [orderId]
-      );
-    } catch (error) {
-      if (error.code === '42S22') { // Column not found error
-        console.log('Status column not found in mpesa_checkout_map, skipping');
-        // You could add the column here programmatically if needed
-      } else {
-        throw error; // Re-throw other errors
-      }
+    if (order.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
     }
 
-    res.json({
-      success: true,
-      message: 'Payment successfully cancelled'
+    // Only cancel if not already completed
+    if (order[0].status !== 'paid') {
+      await pool.query(
+        'UPDATE user_orders SET status = "cancelled" WHERE id = ?',
+        [orderId]
+      );
+
+      try {
+        await pool.query(
+          'UPDATE mpesa_checkout_map SET status = "cancelled" WHERE order_id = ?',
+          [orderId]
+        );
+      } catch (error) {
+        if (error.code !== '42S22') { // Ignore missing column error
+          throw error;
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: 'Payment successfully cancelled'
+      });
+    }
+
+    return res.json({
+      success: false,
+      message: 'Cannot cancel already paid order'
     });
 
   } catch (error) {

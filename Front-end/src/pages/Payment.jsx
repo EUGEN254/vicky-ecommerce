@@ -36,6 +36,7 @@ const Payment = ({ setShowLogin }) => {
   const [showAmountError, setShowAmountError] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [currentOrderId, setCurrentOrderId] = useState(null); // Track current order ID
+
   const isSingleOrderPayment = !!orderFromMyOrders;
 
   // Initialize form data and delivery fee
@@ -97,10 +98,11 @@ const Payment = ({ setShowLogin }) => {
   };
 
   const handleMpesaPayment = async (orderId) => {
+
+    setCurrentOrderId(orderId);
+
     try {
       setMpesaStage('processing');
-      setCurrentOrderId(orderId);
-
       // First check if order was already cancelled
       const statusCheck = await axios.get(`${backendUrl}/api/orders/${orderId}`);
       if (statusCheck.data.order?.status === 'cancelled') {
@@ -177,7 +179,6 @@ const Payment = ({ setShowLogin }) => {
     try {
       setIsProcessing(true);
       setMpesaStage('cancelling');
-      
       if (!currentOrderId) {
         throw new Error("Order ID not found");
       }
