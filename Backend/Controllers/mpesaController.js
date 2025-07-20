@@ -115,6 +115,16 @@ export const mpesaCallback = async (req, res) => {
       description: resultDesc
     });
 
+     // Determine status based on result code
+     let status;
+     if (resultCode === 0) {
+       status = 'paid';
+     } else if (resultDesc.includes('cancelled')) {
+       status = 'cancelled';
+     } else {
+       status = 'failed';
+     }
+
     if (checkoutId) {
       const [rows] = await pool.query(
         'SELECT order_id FROM mpesa_checkout_map WHERE checkout_id = ?',
