@@ -277,7 +277,7 @@ const Payment = ({ setShowLogin }) => {
                   </p>
                   <button
                     onClick={() => setMpesaStage('cancelled')}
-                    className="mt-4 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                    className="mt-4 px-4 py-2 bg-blue-600 text-gray-800 rounded-md hover:bg-gray-300"
                   >
                     Cancel Payment
                   </button>
@@ -349,6 +349,7 @@ const Payment = ({ setShowLogin }) => {
                   </button>
                 </div>
               ) : (
+
                 /* Default Payment Form */
                 <>
                   <div className="space-y-4">
@@ -483,10 +484,15 @@ const Payment = ({ setShowLogin }) => {
                   </div>
                 </>
               )}
+
             </div>
           </form>
 
+
+
           {/* Order Summary */}
+
+
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
             
@@ -564,6 +570,9 @@ const Payment = ({ setShowLogin }) => {
               </div>
             </div>
           </div>
+
+
+          
         </div>
       </div>
     </div>

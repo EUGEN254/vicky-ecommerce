@@ -135,7 +135,7 @@ export const mpesaCallback = async (req, res) => {
           // 3. Handle failed payment (optional: update status to 'failed')
           console.log("❌ Payment FAILED for order:", orderId, "Reason:", resultDesc);
           await pool.query(
-            'UPDATE user_orders SET status = "payment_failed" WHERE id = ?',
+            'UPDATE user_orders SET status = "failed" WHERE id = ?',
             [orderId]
           );
         }
