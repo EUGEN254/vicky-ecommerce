@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { AppContent } from '../context/AppContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -36,7 +36,7 @@ const Payment = ({ setShowLogin }) => {
   const [showAmountError, setShowAmountError] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [currentOrderId, setCurrentOrderId] = useState(null); // Track current order ID
-
+  const pollingTimeoutRef = useRef();
   const isSingleOrderPayment = !!orderFromMyOrders;
 
   // Initialize form data and delivery fee
@@ -117,12 +117,12 @@ const Payment = ({ setShowLogin }) => {
       });
       
       if (response.data.success) {
-        const checkPayment = async (attempts = 0) => {
+         
+         const checkPayment = async (attempts = 0) => {
           // Check if cancelled before proceeding
           if (mpesaStage === 'cancelled') {
             return;
           }
-
           if (attempts >= 20) { 
             setMpesaStage('timeout');
             return;
@@ -156,7 +156,7 @@ const Payment = ({ setShowLogin }) => {
             if (attempts >= 20) {
               setMpesaStage('error');
             } else {
-              setTimeout(() => checkPayment(attempts + 1), 2000);
+              pollingTimeoutRef.current = setTimeout(() => checkPayment(attempts + 1), 2000);
             }
           }
         };
@@ -179,8 +179,9 @@ const Payment = ({ setShowLogin }) => {
     try {
       setIsProcessing(true);
       setMpesaStage('cancelling');
+      
       if (!currentOrderId) {
-        throw new Error("Order ID not found");
+        throw new Error("No active order to cancel");
       }
   
       const response = await axios.post(`${backendUrl}/mpesa/cancel-payment`, {
@@ -189,6 +190,9 @@ const Payment = ({ setShowLogin }) => {
   
       if (response.data.success) {
         setMpesaStage('cancelled');
+        // Clear any ongoing polling
+        clearTimeout(pollingTimeoutRef.current);
+        toast.success("Payment cancelled successfully");
       } else {
         setMpesaStage('failed');
         toast.error(response.data.message || "Failed to cancel payment");

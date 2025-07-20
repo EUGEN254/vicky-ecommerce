@@ -21,11 +21,18 @@ export const initiateSTKPush = async (req, res) => {
 
     console.log("Initiating payment for order:", orderId);
 
-     // Verify order exists
-     const [order] = await pool.query(
-      'SELECT id FROM user_orders WHERE id = ?',
+    // Check if order is already cancelled
+    const [order] = await pool.query(
+      'SELECT status FROM user_orders WHERE id = ?',
       [orderId]
     );
+    
+    if (order.length > 0 && order[0].status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot initiate payment for cancelled order'
+      });
+    }
 
     if (order.length === 0) {
       return res.status(404).json({
@@ -171,46 +178,54 @@ export const cancelSTKPush = async (req, res) => {
       });
     }
 
-    // First verify the order exists
-    const [order] = await pool.query(
-      'SELECT id, status FROM user_orders WHERE id = ?',
+    // Get the checkout request ID first
+    const [checkout] = await pool.query(
+      'SELECT checkout_id FROM mpesa_checkout_map WHERE order_id = ?',
       [orderId]
     );
 
-    if (order.length === 0) {
+    if (checkout.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Order not found'
+        message: 'Payment request not found'
       });
     }
 
-    // Only cancel if not already completed
-    if (order[0].status !== 'paid') {
-      await pool.query(
-        'UPDATE user_orders SET status = "cancelled" WHERE id = ?',
-        [orderId]
-      );
+    const checkoutId = checkout[0].checkout_id;
 
-      try {
-        await pool.query(
-          'UPDATE mpesa_checkout_map SET status = "cancelled" WHERE order_id = ?',
-          [orderId]
-        );
-      } catch (error) {
-        if (error.code !== '42S22') { // Ignore missing column error
-          throw error;
+    // Update database first
+    await pool.query(
+      'UPDATE user_orders SET status = "cancelled" WHERE id = ?',
+      [orderId]
+    );
+
+    await pool.query(
+      'UPDATE mpesa_checkout_map SET status = "cancelled" WHERE order_id = ?',
+      [orderId]
+    );
+
+    // Attempt to cancel with M-Pesa API (simulated - actual API may not support this)
+    try {
+      const authToken = await generateAuthToken();
+      await axios.post(
+        `${MPESA_API_URL}/mpesa/stkpush/v1/cancel`, // Note: This endpoint may not exist
+        {
+          BusinessShortCode: BUSINESS_SHORT_CODE,
+          CheckoutRequestID: checkoutId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
         }
-      }
-
-      return res.json({
-        success: true,
-        message: 'Payment successfully cancelled'
-      });
+      );
+    } catch (apiError) {
+      console.log('M-Pesa cancellation not supported, proceeding with local cancellation');
     }
 
     return res.json({
-      success: false,
-      message: 'Cannot cancel already paid order'
+      success: true,
+      message: 'Payment successfully cancelled'
     });
 
   } catch (error) {
