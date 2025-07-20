@@ -148,3 +148,42 @@ export const mpesaCallback = async (req, res) => {
     res.status(500).end();
   }
 };
+
+
+export const cancelSTKPush = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order ID is required'
+      });
+    }
+
+    // Update order status to cancelled
+    await pool.query(
+      'UPDATE user_orders SET status = "cancelled" WHERE id = ?',
+      [orderId]
+    );
+
+    // Optional: Also update the checkout map if you want to track cancellations
+    await pool.query(
+      'UPDATE mpesa_checkout_map SET status = "cancelled" WHERE order_id = ?',
+      [orderId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Payment successfully cancelled'
+    });
+
+  } catch (error) {
+    console.error('Cancellation Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel payment',
+      error: error.message
+    });
+  }
+};

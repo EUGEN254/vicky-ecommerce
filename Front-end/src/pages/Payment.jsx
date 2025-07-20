@@ -151,7 +151,36 @@ const Payment = ({ setShowLogin }) => {
       }
     } catch (error) {
       console.error('Payment Error:', error);
+      // Check if this was a cancellation error
+      if (error.response?.data?.message?.includes('cancelled')) {
+        setMpesaStage('cancelled');
+      } else {
+        setMpesaStage('failed');
+      }
+    }
+  };
+
+  const handleCancelPayment = async () => {
+    try {
+      setIsProcessing(true);
+      const orderId = isSingleOrderPayment ? orderFromMyOrders.id : data?.orderId;
+      
+      const response = await axios.post(`${backendUrl}/mpesa/cancel-payment`, {
+        orderId: orderId
+      });
+  
+      if (response.data.success) {
+        setMpesaStage('cancelled');
+      } else {
+        setMpesaStage('failed');
+        toast.error("Failed to cancel payment");
+      }
+    } catch (error) {
+      console.error('Cancellation error:', error);
       setMpesaStage('failed');
+      toast.error("Error cancelling payment");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -276,8 +305,8 @@ const Payment = ({ setShowLogin }) => {
                     Please check your phone and enter your M-Pesa PIN when prompted
                   </p>
                   <button
-                    onClick={() => setMpesaStage('cancelled')}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-gray-800 rounded-md hover:bg-gray-300"
+                    onClick={handleCancelPayment}
+                    className="mt-4 px-4 py-2 bg-blue-800 text-gray-800 rounded-md cursor-pointer"
                   >
                     Cancel Payment
                   </button>
@@ -572,7 +601,7 @@ const Payment = ({ setShowLogin }) => {
           </div>
 
 
-          
+
         </div>
       </div>
     </div>
