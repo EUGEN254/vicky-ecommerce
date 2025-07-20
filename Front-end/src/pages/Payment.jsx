@@ -35,6 +35,7 @@ const Payment = ({ setShowLogin }) => {
   const [mpesaStage, setMpesaStage] = useState('input');
   const [showAmountError, setShowAmountError] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [currentOrderId, setCurrentOrderId] = useState(null); // Track current order ID
   const isSingleOrderPayment = !!orderFromMyOrders;
 
   // Initialize form data and delivery fee
@@ -55,6 +56,7 @@ const Payment = ({ setShowLogin }) => {
       };
       setFormData(initialData);
       setDeliveryFee(initialData.city?.toLowerCase() === 'nairobi' ? 0 : 200);
+      setCurrentOrderId(orderFromMyOrders.id);
     } else if (saved) {
       const parsedData = JSON.parse(saved);
       setFormData(parsedData);
@@ -97,8 +99,9 @@ const Payment = ({ setShowLogin }) => {
   const handleMpesaPayment = async (orderId) => {
     try {
       setMpesaStage('processing');
+      setCurrentOrderId(orderId);
 
-       // First check if order was already cancelled
+      // First check if order was already cancelled
       const statusCheck = await axios.get(`${backendUrl}/api/orders/${orderId}`);
       if (statusCheck.data.order?.status === 'cancelled') {
         setMpesaStage('cancelled');
@@ -126,7 +129,6 @@ const Payment = ({ setShowLogin }) => {
           try {
             const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
             
-            // Enhanced status handling
             switch(data.order?.status) {
               case 'paid':
                 setMpesaStage('success');
@@ -163,7 +165,6 @@ const Payment = ({ setShowLogin }) => {
       }
     } catch (error) {
       console.error('Payment Error:', error);
-      // Check if this was a cancellation error
       if (error.response?.data?.message?.includes('cancelled')) {
         setMpesaStage('cancelled');
       } else {
@@ -175,14 +176,14 @@ const Payment = ({ setShowLogin }) => {
   const handleCancelPayment = async () => {
     try {
       setIsProcessing(true);
-      const orderId = isSingleOrderPayment ? orderFromMyOrders?.id : data?.orderId;
+      setMpesaStage('cancelling');
       
-      if (!orderId) {
+      if (!currentOrderId) {
         throw new Error("Order ID not found");
       }
   
       const response = await axios.post(`${backendUrl}/mpesa/cancel-payment`, {
-        orderId: orderId
+        orderId: currentOrderId
       });
   
       if (response.data.success) {
@@ -252,7 +253,7 @@ const Payment = ({ setShowLogin }) => {
             return {
               productid: product.id,
               categoryid: product.category_id || null,
-              userId: userData?.id,
+              userId: userData.id,
               quantity: item.quantity,
               selected_size: item.size,
               selected_color: item.color,
@@ -272,7 +273,7 @@ const Payment = ({ setShowLogin }) => {
 
         const { data } = await axios.post(`${backendUrl}/api/orders/s`, { 
           orders: newOrders,
-          userId: userData?.id
+          userId: userData.id 
         });
         
         if (data.success) {
@@ -312,9 +313,7 @@ const Payment = ({ setShowLogin }) => {
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-semibold mb-6">Payment Details</h2>
               
-              {/* Payment Status Screens */}
               {mpesaStage === 'cancelling' ? (
-                
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
                   <p className="text-lg font-medium">Cancelling Payment</p>
@@ -322,7 +321,6 @@ const Payment = ({ setShowLogin }) => {
                     Please wait while we process your cancellation
                   </p>
                 </div>
-
               ) : mpesaStage === 'processing' ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
@@ -332,7 +330,7 @@ const Payment = ({ setShowLogin }) => {
                   </p>
                   <button
                     onClick={handleCancelPayment}
-                    className="mt-4 px-4 py-2 bg-blue-800 text-gray-800 rounded-md cursor-pointer"
+                    className="mt-4 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
                   >
                     Cancel Payment
                   </button>
@@ -351,22 +349,22 @@ const Payment = ({ setShowLogin }) => {
                 </div>
               ) : mpesaStage === 'cancelled' ? (
                 <div className="text-center py-12">
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
-                  <svg className="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
+                    <svg className="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-yellow-600">Payment Cancelled</p>
+                  <p className="text-gray-500 mt-2">
+                    You cancelled the payment request
+                  </p>
+                  <button
+                    onClick={() => setMpesaStage('input')}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Try Again
+                  </button>
                 </div>
-                <p className="text-lg font-medium text-yellow-600">Payment Cancelled</p>
-                <p className="text-gray-500 mt-2">
-                  You cancelled the payment request
-                </p>
-                <button
-                  onClick={() => setMpesaStage('input')}
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Try Again
-                </button>
-              </div>
               ) : mpesaStage === 'failed' ? (
                 <div className="text-center py-12">
                   <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
