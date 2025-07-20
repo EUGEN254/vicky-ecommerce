@@ -21,23 +21,23 @@ export const initiateSTKPush = async (req, res) => {
 
     console.log("Initiating payment for order:", orderId);
 
-    // Check if order is already cancelled
-    const [order] = await pool.query(
-      'SELECT status FROM user_orders WHERE id = ?',
+     // Verify order exists
+     const [order] = await pool.query(
+      'SELECT id FROM user_orders WHERE id = ?',
       [orderId]
     );
-    
-    if (order.length > 0 && order[0].status === 'cancelled') {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot initiate payment for cancelled order'
-      });
-    }
 
     if (order.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
+      });
+    }
+
+    if (order.length > 0 && order[0].status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot initiate payment for cancelled order'
       });
     }
 
@@ -123,14 +123,14 @@ export const mpesaCallback = async (req, res) => {
     });
 
      // Determine status based on result code
-     let status;
-     if (resultCode === 0) {
-       status = 'paid';
-     } else if (resultDesc.includes('cancelled')) {
-       status = 'cancelled';
-     } else {
-       status = 'failed';
-     }
+    let status;
+    if (resultCode === 0) {
+      status = 'paid';
+    } else if (resultDesc.includes('cancelled')) {
+      status = 'cancelled';
+    } else {
+      status = 'failed';
+    }
 
     if (checkoutId) {
       const [rows] = await pool.query(
@@ -204,25 +204,8 @@ export const cancelSTKPush = async (req, res) => {
       [orderId]
     );
 
-    // Attempt to cancel with M-Pesa API (simulated - actual API may not support this)
-    try {
-      const authToken = await generateAuthToken();
-      await axios.post(
-        `${MPESA_API_URL}/mpesa/stkpush/v1/cancel`, // Note: This endpoint may not exist
-        {
-          BusinessShortCode: BUSINESS_SHORT_CODE,
-          CheckoutRequestID: checkoutId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-    } catch (apiError) {
-      console.log('M-Pesa cancellation not supported, proceeding with local cancellation');
-    }
-
+  
+     
     return res.json({
       success: true,
       message: 'Payment successfully cancelled'
