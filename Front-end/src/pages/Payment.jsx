@@ -251,7 +251,7 @@ const Payment = ({ setShowLogin }) => {
             return {
               productid: product.id,
               categoryid: product.category_id || null,
-              userId: userData.id,
+              userId: userData?.id,
               quantity: item.quantity,
               selected_size: item.size,
               selected_color: item.color,
@@ -271,7 +271,7 @@ const Payment = ({ setShowLogin }) => {
 
         const { data } = await axios.post(`${backendUrl}/api/orders/s`, { 
           orders: newOrders,
-          userId: user.id 
+          userId: userData?.id
         });
         
         if (data.success) {
@@ -313,7 +313,7 @@ const Payment = ({ setShowLogin }) => {
               
               {/* Payment Status Screens */}
               {mpesaStage === 'cancelling' ? (
-
+                
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
                   <p className="text-lg font-medium">Cancelling Payment</p>
