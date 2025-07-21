@@ -268,12 +268,17 @@ export const getOrderById = async (req, res) => {
     const { id } = req.params; 
 
     const [rows] = await pool.query(
-      'SELECT is_paid FROM user_orders WHERE id = ?',
+      'SELECT is_paid, status FROM user_orders WHERE id = ?',
       [id]
     );
 
     if (rows.length > 0) {
-      return res.json({ order: rows[0] });
+      return res.json({ 
+        order: {
+          is_paid: rows[0].is_paid,
+          status: rows[0].status
+        } 
+      });
     } else {
       return res.status(404).json({ message: "Order not found" });
     }
@@ -282,7 +287,6 @@ export const getOrderById = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
 export const dashboardData = async (req,res) => {
   try {
     const dashBoardData = await dashboard();
