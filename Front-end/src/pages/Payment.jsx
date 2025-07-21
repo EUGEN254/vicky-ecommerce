@@ -97,207 +97,207 @@ const Payment = ({ setShowLogin }) => {
     }
   };
 
-  const handleMpesaPayment = async (orderId) => {
+ const handleMpesaPayment = async (orderId) => {
+  setCurrentOrderId(orderId);
+  setMpesaStage('processing');
 
-    setCurrentOrderId(orderId);
+  try {
+    // Step 1: Check if order is already cancelled
+    const { data: statusData } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
+    const status = statusData?.order?.status;
 
-    try {
-      setMpesaStage('processing');
-      // First check if order was already cancelled
-      const statusCheck = await axios.get(`${backendUrl}/api/orders/${orderId}`);
-      if (statusCheck.data.order?.status === 'cancelled') {
-        setMpesaStage('cancelled');
-        return;
-      }
-      
-      const response = await axios.post(`${backendUrl}/mpesa/stkpush`, {
-        phone: formData.phone,
-        amount: mpesaAmount,
-        orderId: orderId
-      });
-      
-      if (response.data.success) {
-        const checkPayment = async (attempts = 0) => {
-          // Double-check cancellation status before each poll
-          const { currentStatus } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
-          if (currentStatus.order?.status === 'cancelled') {
+    if (status === 'cancelled') {
+      setMpesaStage('cancelled');
+      console.warn("🚫 Payment blocked: Order is already cancelled.");
+      return;
+    }
+
+    // Step 2: Initiate payment
+    const response = await axios.post(`${backendUrl}/mpesa/stkpush`, {
+      phone: formData.phone,
+      amount: mpesaAmount,
+      orderId
+    });
+
+    if (!response.data.success) {
+      setMpesaStage('failed');
+      console.warn("❌ STK push failed to start");
+      return;
+    }
+
+    console.log("📲 STK push initiated:", response.data.data);
+
+    // Step 3: Start polling for payment status
+    const checkPayment = async (attempts = 0) => {
+      try {
+        if (attempts >= 20) {
+          setMpesaStage('timeout');
+          console.warn("⌛ Polling timed out");
+          return;
+        }
+
+        const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
+        const orderStatus = data?.order?.status;
+
+        console.log(`🔁 Polling attempt ${attempts + 1}: status = ${orderStatus}`);
+
+        switch (orderStatus) {
+          case 'paid':
+            setMpesaStage('success');
+            clearTimeout(pollingTimeoutRef.current);
+            if (!isSingleOrderPayment) {
+              setCartItems({});
+              localStorage.removeItem(`cart_${userData.id}`);
+            }
+            setTimeout(() => navigate('/My-orders'), 2000);
+            return;
+
+          case 'cancelled':
             setMpesaStage('cancelled');
             clearTimeout(pollingTimeoutRef.current);
             return;
-          }
 
-          if (attempts >= 20) { 
-            setMpesaStage('timeout');
+          case 'failed':
+            setMpesaStage('failed');
+            clearTimeout(pollingTimeoutRef.current);
             return;
-          }
 
-          try {
-            const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
-            switch(data.order?.status) {
-              case 'paid':
-                setMpesaStage('success');
-                if (!isSingleOrderPayment) {
-                  setCartItems({});
-                  if (userData?.id) {
-                    localStorage.removeItem(`cart_${userData.id}`);
-                  }
-                }
-                setTimeout(() => navigate('/My-orders'), 2000);
-                return;
-              case 'cancelled':
-                setMpesaStage('cancelled');
-                return;
-
-              case 'failed':
-                setMpesaStage('failed');
-                return;
-
-              default:
-                setTimeout(() => checkPayment(attempts + 1), 2000);
-            }
-          } catch (error) {
-            console.error('Payment check error:', error);
-            if (attempts >= 20) {
-              setMpesaStage('error');
-            } else {
-              pollingTimeoutRef.current = setTimeout(() => checkPayment(attempts + 1), 2000);
-            }
-          }
-        };
-
-        checkPayment();
-      } else {
-        setMpesaStage('failed');
+          default:
+            pollingTimeoutRef.current = setTimeout(() => checkPayment(attempts + 1), 2000);
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+        if (attempts >= 20) {
+          setMpesaStage('error');
+        } else {
+          pollingTimeoutRef.current = setTimeout(() => checkPayment(attempts + 1), 2000);
+        }
       }
-    } catch (error) {
-      console.error('Payment Error:', error);
-      if (error.response?.data?.message?.includes('cancelled')) {
-        setMpesaStage('cancelled');
-      } else {
-        setMpesaStage('failed');
-      }
-    }
-  };
+    };
 
-  const handleCancelPayment = async () => {
-    try {
-      setIsProcessing(true);
-      setMpesaStage('cancelling');
-      
-      if (!currentOrderId) {
-        throw new Error("No active order to cancel");
-      }
-  
-      const response = await axios.post(`${backendUrl}/mpesa/cancel-payment`, {
-        orderId: currentOrderId
-      });
-  
-      if (response.data.success) {
-        setMpesaStage('cancelled');
-        // Clear any ongoing polling
-        clearTimeout(pollingTimeoutRef.current);
-        toast.success("Payment cancelled successfully");
-      } else {
-        setMpesaStage('failed');
-        toast.error(response.data.message || "Failed to cancel payment");
-      }
-    } catch (error) {
-      console.error('Cancellation error:', error);
-      setMpesaStage('failed');
-      toast.error(error.response?.data?.message || "Error cancelling payment");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+    checkPayment();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  } catch (error) {
+    console.error('STK Push initiation error:', error);
+    const isCancelled = error.response?.data?.message?.includes('cancelled');
+    setMpesaStage(isCancelled ? 'cancelled' : 'failed');
+  }
+};
 
-    if (!userData?.id) {
-      localStorage.setItem('pendingOrder', JSON.stringify(formData));
-      localStorage.setItem('redirectAfterLogin', window.location.pathname);
-      setShowLogin(true);
-      setIsProcessing(false);
-      return;
-    }
-  
-    if (!formData.name || !formData.email || !formData.address || !formData.phone || !formData.city) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-  
-    if (!mpesaAmount) {
-      toast.error("Please enter Mpesa amount");
-      return;
-    }
-    
-    if (parseFloat(mpesaAmount) < total) {
-      setShowAmountError(true);
-      toast.error(`Amount must be at least KES ${total}`);
-      return;
-    }
-
+const handleCancelPayment = async () => {
+  try {
     setIsProcessing(true);
-  
-    try {
-      if (isSingleOrderPayment) {
-        const { data } = await axios.put(`${backendUrl}/api/orders/order/${orderFromMyOrders.id}`, {
-          is_paid: false, 
-          payment_method: 'Mpesa',
-          shipping_address: formData
-        });
-  
-        if (data.success) {
-          await handleMpesaPayment(orderFromMyOrders.id);
-        } else {
-          toast.error(data.message || "Failed to update order");
-        }
-      } else {
-        const allProducts = [...productsData, ...exclusiveOffers];
-        
-        const newOrders = allProducts
-          .filter(product => currentCart[product.id]?.quantity > 0)
-          .map(product => {
-            const item = currentCart[product.id];
-            return {
-              productid: product.id,
-              categoryid: product.category_id || null,
-              userId: userData.id,
-              quantity: item.quantity,
-              selected_size: item.size,
-              selected_color: item.color,
-              total_amount: product.price * item.quantity,
-              delivery_fee: deliveryFee,
-              order_date: new Date().toISOString(),
-              delivery_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-              is_paid: false,
-              payment_method: 'Mpesa',
-              shipping_address: formData
-            };
-          });
+    setMpesaStage('cancelling');
 
-        if (newOrders.length === 0) {
-          throw new Error("No items in cart");
-        }
+    if (!currentOrderId) throw new Error("No order to cancel");
 
-        const { data } = await axios.post(`${backendUrl}/api/orders/s`, { 
-          orders: newOrders,
-          userId: userData.id 
-        });
-        
-        if (data.success) {
-          await handleMpesaPayment(data.orderId);
-        } else {
-          toast.error(data.message || "Failed to place order");
-        }
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      toast.error(error.message || "Error processing payment");
-    } finally {
-      setIsProcessing(false);
+    const { data } = await axios.post(`${backendUrl}/mpesa/cancel-payment`, {
+      orderId: currentOrderId
+    });
+
+    if (data.success) {
+      setMpesaStage('cancelled');
+      clearTimeout(pollingTimeoutRef.current);
+      toast.success("Payment cancelled successfully");
+    } else {
+      toast.error(data.message || "Failed to cancel payment");
+      setMpesaStage('failed');
     }
-  };
+  } catch (error) {
+    console.error('Cancellation error:', error);
+    toast.error(error.response?.data?.message || "Error cancelling payment");
+    setMpesaStage('failed');
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!userData?.id) {
+    localStorage.setItem('pendingOrder', JSON.stringify(formData));
+    localStorage.setItem('redirectAfterLogin', window.location.pathname);
+    setShowLogin(true);
+    setIsProcessing(false);
+    return;
+  }
+
+  if (!formData.name || !formData.email || !formData.address || !formData.phone || !formData.city) {
+    toast.error("Please fill in all required fields");
+    return;
+  }
+
+  if (!mpesaAmount) {
+    toast.error("Please enter Mpesa amount");
+    return;
+  }
+
+  if (parseFloat(mpesaAmount) < total) {
+    setShowAmountError(true);
+    toast.error(`Amount must be at least KES ${total}`);
+    return;
+  }
+
+  setIsProcessing(true);
+
+  try {
+    if (isSingleOrderPayment) {
+      const { data } = await axios.put(`${backendUrl}/api/orders/order/${orderFromMyOrders.id}`, {
+        is_paid: false,
+        payment_method: 'Mpesa',
+        shipping_address: formData
+      });
+
+      if (data.success) {
+        await handleMpesaPayment(orderFromMyOrders.id);
+      } else {
+        toast.error(data.message || "Failed to update order");
+      }
+    } else {
+      const allProducts = [...productsData, ...exclusiveOffers];
+      const newOrders = allProducts
+        .filter(product => currentCart[product.id]?.quantity > 0)
+        .map(product => {
+          const item = currentCart[product.id];
+          return {
+            productid: product.id,
+            categoryid: product.category_id || null,
+            userId: userData.id,
+            quantity: item.quantity,
+            selected_size: item.size,
+            selected_color: item.color,
+            total_amount: product.price * item.quantity,
+            delivery_fee: deliveryFee,
+            order_date: new Date().toISOString(),
+            delivery_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            is_paid: false,
+            payment_method: 'Mpesa',
+            shipping_address: formData
+          };
+        });
+
+      if (newOrders.length === 0) throw new Error("No items in cart");
+
+      const { data } = await axios.post(`${backendUrl}/api/orders/s`, {
+        orders: newOrders,
+        userId: userData.id
+      });
+
+      if (data.success) {
+        await handleMpesaPayment(data.orderId);
+      } else {
+        toast.error(data.message || "Failed to place order");
+      }
+    }
+  } catch (error) {
+    console.error("🚨 Submit error:", error);
+    toast.error(error.message || "Error processing payment");
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
 
   const getCartItems = () => {
     const allProducts = [...productsData, ...exclusiveOffers];

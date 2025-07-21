@@ -1,19 +1,17 @@
 import axios from 'axios';
-import { generateAuthToken } from '../Middleware/mpesaAuth.js'; 
+import { generateAuthToken } from '../Middleware/mpesaAuth.js';
 import pool from '../config/connectDb.js';
 
-const backendUrl = 'https://08e747951988.ngrok-free.app';
+const backendUrl ='https://08e747951988.ngrok-free.app';
 const MPESA_API_URL = 'https://sandbox.safaricom.co.ke';
 const BUSINESS_SHORT_CODE = '174379';
 const PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
 const CALLBACK_URL = `${backendUrl}/mpesa/callback`;
 
 export const initiateSTKPush = async (req, res) => {
-  
   try {
-
     const { phone, amount, orderId } = req.body;
-    // Validate input
+
     if (!phone || !amount || !orderId) {
       return res.status(400).json({
         success: false,
@@ -21,30 +19,21 @@ export const initiateSTKPush = async (req, res) => {
       });
     }
 
-    console.log("Initiating payment for order:", orderId);
+    console.log("📦 Initiating payment for order:", orderId);
 
-     // Verify order exists
-     const [order] = await pool.query(
-      'SELECT id FROM user_orders WHERE id = ?',
+    const [order] = await pool.query(
+      'SELECT id, status FROM user_orders WHERE id = ?',
       [orderId]
     );
 
     if (order.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
+      return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    // Prevent STK push for cancelled orders
     if (order[0].status === 'cancelled') {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot initiate payment for cancelled order'
-      });
+      return res.status(400).json({ success: false, message: 'Cannot initiate payment for cancelled order' });
     }
 
-    // proceed with stk push
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
     const password = Buffer.from(`${BUSINESS_SHORT_CODE}${PASSKEY}${timestamp}`).toString('base64');
     const authToken = await generateAuthToken();
@@ -71,33 +60,27 @@ export const initiateSTKPush = async (req, res) => {
       }
     );
 
-    // Check for successful STK push initiation
-    if (!response.data?.CheckoutRequestID) {
+    const checkoutId = response.data?.CheckoutRequestID;
+
+    if (!checkoutId) {
       throw new Error('M-Pesa request failed: No CheckoutRequestID received');
     }
 
-    // Save mapping between CheckoutRequestID and orderId
-    const checkoutId = response.data.CheckoutRequestID;
-    console.log("hey check these ",checkoutId);
-    
-    if (checkoutId) {
-      await pool.query(
-        'INSERT INTO mpesa_checkout_map (checkout_id, order_id) VALUES (?, ?)',
-        [checkoutId, orderId]
-      );
-    }
+    await pool.query(
+      'INSERT INTO mpesa_checkout_map (checkout_id, order_id) VALUES (?, ?)',
+      [checkoutId, orderId]
+    );
 
-     // Log BEFORE sending response
-     console.log('Payment initiated:', response.data);
+    console.log('✅ Payment initiated:', response.data);
 
     return res.json({
       success: true,
       message: 'Payment initiated',
       data: response.data,
     });
-    
+
   } catch (error) {
-    console.error('STK Push Error:', error.response?.data || error.message);
+    console.error('🚨 STK Push Error:', error.response?.data || error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to initiate payment',
@@ -111,55 +94,48 @@ export const mpesaCallback = async (req, res) => {
     const callbackData = req.body;
     console.log("🔥 RAW CALLBACK:", JSON.stringify(callbackData, null, 2));
 
-    const stk = callbackData.Body?.stkCallback;
-    console.log("🔍 STK Object Keys:", Object.keys(stk));
-    
-    const checkoutId = stk?.CheckoutRequestID;
-    console.log("🛒 CheckoutRequestID:", checkoutId);
-    
-    // 1. Check if this is a successful payment (ResultCode 0 = success)
-    const resultCode = stk?.ResultCode;
-    const resultDesc = stk?.ResultDesc;
-    
-    console.log("📊 Payment Result:", {
-      code: resultCode,
-      description: resultDesc
-    });
+    const stk = callbackData?.Body?.stkCallback;
 
-     // Determine status based on result code
-    let status;
-    if (resultCode === 0) {
-      status = 'paid';
-    } else if (resultDesc.includes('cancelled')) {
-      status = 'cancelled';
-    } else {
-      status = 'failed';
+    if (!stk) {
+      console.warn("⚠️ No stkCallback found in body");
+      return res.status(400).end();
     }
+
+    const resultCode = parseInt(stk?.ResultCode);
+    const resultDesc = stk?.ResultDesc;
+    const checkoutId = stk?.CheckoutRequestID;
+
+    console.log("📊 Payment Result:", {
+      resultCode,
+      resultDesc,
+      checkoutId,
+    });
 
     if (checkoutId) {
       const [rows] = await pool.query(
         'SELECT order_id FROM mpesa_checkout_map WHERE checkout_id = ?',
         [checkoutId]
       );
-      
+
       if (rows.length > 0) {
         const orderId = rows[0].order_id;
-        
-        // 2. Only update if payment was successful
-        if (resultCode === '0') {
+
+        if (resultCode === 0) {
           console.log("✅ Payment SUCCESS for order:", orderId);
           await pool.query(
             'UPDATE user_orders SET is_paid = 1, status = "paid" WHERE id = ?',
             [orderId]
           );
         } else {
-          // 3. Handle failed payment (optional: update status to 'failed')
-          console.log("❌ Payment FAILED for order:", orderId, "Reason:", resultDesc);
+          const newStatus = resultDesc.toLowerCase().includes('cancelled') ? 'cancelled' : 'failed';
+          console.log(`❌ Payment ${newStatus.toUpperCase()} for order:`, orderId, "Reason:", resultDesc);
           await pool.query(
-            'UPDATE user_orders SET status = "failed" WHERE id = ?',
-            [orderId]
+            'UPDATE user_orders SET status = ? WHERE id = ?',
+            [newStatus, orderId]
           );
         }
+      } else {
+        console.warn("⚠️ CheckoutRequestID not mapped to any order");
       }
     }
 
@@ -169,7 +145,6 @@ export const mpesaCallback = async (req, res) => {
     res.status(500).end();
   }
 };
-
 
 export const cancelSTKPush = async (req, res) => {
   try {
@@ -182,7 +157,6 @@ export const cancelSTKPush = async (req, res) => {
       });
     }
 
-    // Get the checkout request ID first
     const [checkout] = await pool.query(
       'SELECT checkout_id FROM mpesa_checkout_map WHERE order_id = ?',
       [orderId]
@@ -195,9 +169,6 @@ export const cancelSTKPush = async (req, res) => {
       });
     }
 
-    const checkoutId = checkout[0].checkout_id;
-
-    // Update database first
     await pool.query(
       'UPDATE user_orders SET status = "cancelled" WHERE id = ?',
       [orderId]
@@ -207,6 +178,8 @@ export const cancelSTKPush = async (req, res) => {
       'UPDATE mpesa_checkout_map SET status = "cancelled" WHERE order_id = ?',
       [orderId]
     );
+
+    console.log("❎ Payment manually cancelled for order:", orderId);
 
     return res.json({
       success: true,
