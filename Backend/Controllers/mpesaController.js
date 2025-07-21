@@ -2,7 +2,7 @@ import axios from 'axios';
 import { generateAuthToken } from '../Middleware/mpesaAuth.js'; 
 import pool from '../config/connectDb.js';
 
-const backendUrl = 'https://d7a25db21370.ngrok-free.app';
+const backendUrl = 'https://08e747951988.ngrok-free.app';
 const MPESA_API_URL = 'https://sandbox.safaricom.co.ke';
 const BUSINESS_SHORT_CODE = '174379';
 const PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
