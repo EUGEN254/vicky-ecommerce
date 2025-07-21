@@ -97,22 +97,21 @@ const Payment = ({ setShowLogin }) => {
     }
   };
 
- const handleMpesaPayment = async (orderId) => {
+const handleMpesaPayment = async (orderId) => {
   setCurrentOrderId(orderId);
   setMpesaStage('processing');
 
   try {
-    // Step 1: Check if order is already cancelled
-    const { data: statusData } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
-    const status = statusData?.order?.status;
-
-    if (status === 'cancelled') {
+    // 1. Initial status check with enhanced logging
+    const initialStatus = await axios.get(`${backendUrl}/api/orders/${orderId}`);
+    console.log('🔍 Initial Status Response:', initialStatus.data);
+    
+    if (initialStatus.data?.order?.status?.toLowerCase() === 'cancelled') {
       setMpesaStage('cancelled');
-      console.warn("🚫 Payment blocked: Order is already cancelled.");
       return;
     }
 
-    // Step 2: Initiate payment
+    // 2. Initiate payment
     const response = await axios.post(`${backendUrl}/mpesa/stkpush`, {
       phone: formData.phone,
       amount: mpesaAmount,
@@ -121,27 +120,22 @@ const Payment = ({ setShowLogin }) => {
 
     if (!response.data.success) {
       setMpesaStage('failed');
-      console.warn("❌ STK push failed to start");
       return;
     }
 
-    console.log("📲 STK push initiated:", response.data.data);
-
-    // Step 3: Start polling for payment status
+    // 3. Enhanced polling with better status handling
     const checkPayment = async (attempts = 0) => {
       try {
-        if (attempts >= 20) {
-          setMpesaStage('timeout');
-          console.warn("⌛ Polling timed out");
-          return;
-        }
-
         const { data } = await axios.get(`${backendUrl}/api/orders/${orderId}`);
-        const orderStatus = data?.order?.status;
+        console.log('📊 Polling Response:', data); // Full response logging
+        
+        // Flexible status checking
+        const status = data?.order?.status || data?.status;
+        const normalizedStatus = status?.toLowerCase();
+        
+        console.log(`🔄 Attempt ${attempts + 1}: Status = ${normalizedStatus}`);
 
-        console.log(`🔁 Polling attempt ${attempts + 1}: status = ${orderStatus}`);
-
-        switch (orderStatus) {
+        switch (normalizedStatus) {
           case 'paid':
             setMpesaStage('success');
             clearTimeout(pollingTimeoutRef.current);
@@ -163,11 +157,15 @@ const Payment = ({ setShowLogin }) => {
             return;
 
           default:
-            pollingTimeoutRef.current = setTimeout(() => checkPayment(attempts + 1), 2000);
+            if (attempts >= 30) { // Increased from 20 to 30 attempts
+              setMpesaStage('timeout');
+            } else {
+              pollingTimeoutRef.current = setTimeout(() => checkPayment(attempts + 1), 2000);
+            }
         }
       } catch (error) {
         console.error('Polling error:', error);
-        if (attempts >= 20) {
+        if (attempts >= 30) {
           setMpesaStage('error');
         } else {
           pollingTimeoutRef.current = setTimeout(() => checkPayment(attempts + 1), 2000);
@@ -178,9 +176,8 @@ const Payment = ({ setShowLogin }) => {
     checkPayment();
 
   } catch (error) {
-    console.error('STK Push initiation error:', error);
-    const isCancelled = error.response?.data?.message?.includes('cancelled');
-    setMpesaStage(isCancelled ? 'cancelled' : 'failed');
+    console.error('Payment error:', error);
+    setMpesaStage('failed');
   }
 };
 
@@ -303,6 +300,14 @@ const handleSubmit = async (e) => {
     const allProducts = [...productsData, ...exclusiveOffers];
     return allProducts.filter(product => currentCart[product.id]?.quantity > 0);
   };
+
+  useEffect(() => {
+  const testEndpoint = async () => {
+    const res = await axios.get(`${backendUrl}/api/orders/${currentOrderId}`);
+    console.log('TEST ENDPOINT RESPONSE:', res.data);
+  };
+  if (currentOrderId) testEndpoint();
+}, [currentOrderId]);
 
   return (
     <div className="min-h-screen bg-gray-50 mt-10 py-12 px-4 sm:px-6 lg:px-8">
