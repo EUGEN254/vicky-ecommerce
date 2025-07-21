@@ -1,12 +1,13 @@
 import axios from 'axios';
 import { generateAuthToken } from '../Middleware/mpesaAuth.js';
 import pool from '../config/connectDb.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const backendUrl ='https://08e747951988.ngrok-free.app';
-const MPESA_API_URL = 'https://sandbox.safaricom.co.ke';
-const BUSINESS_SHORT_CODE = '174379';
-const PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
-const CALLBACK_URL = `${backendUrl}/mpesa/callback`;
+const MPESA_API_URL = process.env.MPESA_BASE_URL;
+const BUSINESS_SHORT_CODE = process.env.MPESA_SHORTCODE;
+const PASSKEY = process.env.MPESA_PASSKEY;
+const CALLBACK_URL = process.env.MPESA_CALLBACK_URL;;
 
 export const initiateSTKPush = async (req, res) => {
   try {
