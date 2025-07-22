@@ -5,7 +5,7 @@ import transporter from '../config/nodemailer.js'
 import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE, WELCOME_TEMPLATE } from '../config/emailTemplates.js'
 import { findUserByEmail, createUser } from '../Models/userModel.js'
 
-// 🟢 Register
+// 🟢 Registerr
 export const register = async (req, res) => {
   const { name, email, password } = req.body
 
