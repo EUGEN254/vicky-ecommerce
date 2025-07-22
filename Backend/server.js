@@ -24,12 +24,13 @@ connectCloudinary();
 const corsOptions = {
   origin: [
     'http://localhost:5173',
-    'https://08e747951988.ngrok-free.app',
+    'https://backend-production-aa9a.up.railway.app',
     'https://vicky-shoe-hub.vercel.app',
   ],
   credentials: true,
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200 
 };
 
 app.use(cors(corsOptions));
