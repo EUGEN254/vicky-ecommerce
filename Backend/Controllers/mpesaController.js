@@ -81,12 +81,12 @@ export const initiateSTKPush = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('🚨 STK Push Error:', error.response?.data || error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to initiate payment',
-      error: error.response?.data || error.message,
-    });
+  console.error('🚨 STK Push Error:', {
+    message: error.message,
+    status: error.response?.status,
+    data: error.response?.data,
+    headers: error.response?.headers
+  });
   }
 };
 
