@@ -4,7 +4,7 @@ import { initiateSTKPush, mpesaCallback,cancelSTKPush } from '../Controllers/mpe
 const mpesaRoute = express.Router();
 
 mpesaRoute.post('/stkpush', initiateSTKPush);
-mpesaRoute.get('/callback', mpesaCallback);
+mpesaRoute.post('/callback', mpesaCallback);
 mpesaRoute.post('/cancel-payment', cancelSTKPush);
 
 export default  mpesaRoute;
