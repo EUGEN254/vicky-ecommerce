@@ -39,6 +39,8 @@ export const initiateSTKPush = async (req, res) => {
     const password = Buffer.from(`${BUSINESS_SHORT_CODE}${PASSKEY}${timestamp}`).toString('base64');
     const authToken = await generateAuthToken();
 
+    console.log('📤 Sending STK Push with callback URL:', CALLBACK_URL);
+
     const response = await axios.post(
       `${MPESA_API_URL}/mpesa/stkpush/v1/processrequest`,
       {
