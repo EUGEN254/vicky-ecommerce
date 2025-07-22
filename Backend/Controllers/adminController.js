@@ -6,7 +6,7 @@ export const getAdminData = async (req, res) => {
    try {
     const userId = req.user.id 
   
-      const [rows] = await pool.query('SELECT * FROM Admin WHERE id = ?', [userId])
+      const [rows] = await pool.query('SELECT * FROM admin WHERE id = ?', [userId])
       const user = rows[0]
   
       if (!user) {

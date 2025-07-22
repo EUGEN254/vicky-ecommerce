@@ -3,6 +3,7 @@ import pool from '../config/connectDb.js';
 
 export const adminAuth = async (req, res, next) => {
   // Try to get token from both cookies and Authorization header
+  console.log('🔐 Cookies:', req.cookies);
   const token = req.cookies.adminToken || req.headers.authorization?.split(' ')[1];
   
   if (!token) {
