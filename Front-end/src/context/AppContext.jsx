@@ -217,19 +217,21 @@ const getTotalCartItems = () => {
   };
 
   const getAdminData = async () => {
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/adminauth/data`);
-     
-      
-      if (data.success) {
-        setAdminLoggedIn(true);
-        setAdminData(data.user);
-      }
-    } catch {
-      setAdminLoggedIn(false);
-      setAdminData(null);
+  try {
+    const { data } = await axios.get(`${backendUrl}/api/adminauth/data`, {
+      withCredentials: true, // 🔥 THIS is the missing piece
+    });
+
+    if (data.success) {
+      setAdminLoggedIn(true);
+      setAdminData(data.user);
     }
-  };
+  } catch (error) {
+    setAdminLoggedIn(false);
+    setAdminData(null);
+  }
+};
+
 
   const fetchProducts = async () => {
       const { data } = await axios.get(backendUrl + '/api/products');
