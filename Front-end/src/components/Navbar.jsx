@@ -191,7 +191,7 @@ const Navbar = ({ setShowLogin }) => {
           )}
 
           {userData ? (
-            <div className="relative group">
+            <div className="relative ">
                <div
                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 font-medium cursor-pointer"
