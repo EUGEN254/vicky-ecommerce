@@ -5,13 +5,14 @@ import transporter from '../config/nodemailer.js'
 import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE, WELCOME_TEMPLATE } from '../config/emailTemplates.js'
 import { findUserByEmail, createUser } from '../Models/userModel.js'
 
-// 🟢 Registerr
+// 🟢 Register
 export const register = async (req, res) => {
-  const { name, email, password } = req.body
+  const { name, email, password ,termsAccepted} = req.body
 
   if (!name || !email || !password) {
     return res.json({ success: false, message: 'Missing details' })
   }
+
   if (!termsAccepted) {
     return res.json({ success: false, message: 'You must accept the terms and conditions.' });
   }
