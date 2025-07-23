@@ -198,21 +198,16 @@ const Navbar = ({ setShowLogin }) => {
               >
                 {userData.name?.[0]?.toUpperCase() || 'U'}
               </div>
-             {isUserDropdownOpen && (
-              <div className="absolute top-10 right-0 z-10 text-black rounded bg-white shadow-md">
+              {isUserDropdownOpen && (
+              <div className="absolute right-0 top-10 bg-white shadow-lg rounded text-sm min-w-[150px] z-50">
                 <ul className="list-none m-0 p-2 text-sm min-w-[150px]">
                   {!userData.isAccountVerified && (
-                    <li onClick={sendVerificationOtp} className="py-2 px-3 hover:bg-gray-100 cursor-pointer whitespace-nowrap">
-                      Verify email
-                    </li>
+                    <li onClick={sendVerificationOtp} className="py-2 px-3 hover:bg-gray-100 cursor-pointer whitespace-nowrap">Verify email</li>
                   )}
-                  <li onClick={logout} className="py-2 px-3 hover:bg-gray-100 cursor-pointer whitespace-nowrap">
-                    Logout
-                  </li>
+                  <li onClick={logout} className="py-2 px-3 hover:bg-gray-100 cursor-pointer whitespace-nowrap">Logout</li>
                 </ul>
               </div>
-            )}
-
+              )}
             </div>
           ) : (
             <button onClick={() => setShowLogin(true)} className="bg-black text-white px-6 py-2 rounded-full ml-4 hover:bg-gray-800 text-sm">
