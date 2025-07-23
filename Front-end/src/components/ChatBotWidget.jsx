@@ -24,7 +24,7 @@ const ChatBotWidget = ({ show, onClose, onToggle }) => {
     setInput('');
 
     try {
-      const res = await axios.post('http://localhost:3306/api/chatbot/message', { message: input });
+      const res = await axios.post(`${backendUrl}/api/chatbot/message`, { message: input });
       const botMessage = { from: 'bot', text: res.data.reply };
       setMessages((prev) => [...prev, botMessage]);
     } catch {
