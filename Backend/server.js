@@ -55,6 +55,7 @@ app.use('/api/chatbot', dialogflowRoute);
 app.use('/api/messages', messageRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/mpesa', mpesaRoute);
+app.use('/images', express.static('public/images'));
 
 // ✅ Database Connection and Server Start
 const startServer = async () => {
