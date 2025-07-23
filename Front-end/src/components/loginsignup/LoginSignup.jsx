@@ -14,6 +14,7 @@ const LoginSignup = ({ setShowLogin }) => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const navigate = useNavigate()
 
@@ -36,7 +37,8 @@ const LoginSignup = ({ setShowLogin }) => {
                 const { data } = await axios.post(backendUrl + '/api/auth/register', { 
                     name, 
                     email, 
-                    password 
+                    password,
+                    termsAccepted 
                 }, {
                     withCredentials: true
                 });
@@ -166,7 +168,14 @@ const LoginSignup = ({ setShowLogin }) => {
 
         {/* Terms */}
         <div className="flex items-start gap-2 text-xs mt-[-10px]">
-          <input type="checkbox" required disabled={isLoading} className="mt-1 " />
+          <input 
+            type="checkbox" 
+            required 
+            disabled={isLoading}
+            checked={termsAccepted}
+            onChange={() => setTermsAccepted(!termsAccepted)}
+            className="mt-1"
+          />
           <Link to='/terms-conditions'>
               <p onClick={()=> setShowLogin(false)} className="cursor-pointer">By continuing, I agree to the terms and conditions</p>
           </Link>

@@ -12,6 +12,9 @@ export const register = async (req, res) => {
   if (!name || !email || !password) {
     return res.json({ success: false, message: 'Missing details' })
   }
+  if (!termsAccepted) {
+    return res.json({ success: false, message: 'You must accept the terms and conditions.' });
+  }
 
   try {
     const existingUser = await findUserByEmail(email)
@@ -20,7 +23,7 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
-    const userId = await createUser({ name, email, password: hashedPassword })
+    const userId = await createUser({ name, email, password: hashedPassword,termsAccepted })
 
     const token = jwt.sign({ id: userId, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' })
 
