@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import axios from 'axios';
+import { AppContent } from '../context/AppContext';
 
 const ChatBotWidget = ({ show, onClose, onToggle }) => {
   const [messages, setMessages] = useState([
@@ -11,6 +12,7 @@ const ChatBotWidget = ({ show, onClose, onToggle }) => {
   ]);
 
   const [input, setInput] = useState('');
+  const {backendUrl} = useContext(AppContent)
 
   const sendMessage = async () => {
     if (!input.trim()) return;
